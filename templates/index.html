@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wallet Notes - Login</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 登录页面 -->
+        <div id="loginPage" class="page">
+            <h1>Welcome to Wallet Notes</h1>
+            <form id="loginForm">
+                <div class="input-group">
+                    <label for="email">Please enter your email</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="input-group">
+                    <label for="password">Please enter your password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit">Log in</button>
+            </form>
+            <p>Don’t have an account yet? <a href="#" id="signupLink">Sign up</a></p>
+        </div>
+
+        <!-- 注册页面 -->
+        <div id="signupPage" class="page hidden">
+            <h1>Using email to register here</h1>
+            <form id="signupForm">
+                <div class="input-group">
+                    <label for="signupEmail">Please enter your email</label>
+                    <input type="email" id="signupEmail" name="email" required>
+                </div>
+                <div class="input-group">
+                    <label for="signupPassword">Please enter your password</label>
+                    <input type="password" id="signupPassword" name="password" required>
+                </div>
+                <button type="submit">Sign up now</button>
+            </form>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
