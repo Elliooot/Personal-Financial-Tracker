@@ -37,7 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'personal_finance_tracker',
+    'finance',
 
 ]
 
@@ -129,4 +129,4 @@ STATICFILES_DIRS = [
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-AUTH_USER_MODEL = 'personal_finance_tracker.User'
+AUTH_USER_MODEL = 'finance.User'

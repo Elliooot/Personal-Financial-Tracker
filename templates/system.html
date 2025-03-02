@@ -374,7 +374,7 @@
         </div>
     </div>
 
-		<!-- <!-- Add Income Category Modal -->
+		<!-- Add Income Category Modal -->
 	<div class="modal fade" id="addIncomeCategoryModal" tabindex="-1" aria-labelledby="addIncomeCategoryModalLabel" aria-hidden="true">
 		<div class="modal-dialog">
 			<div class="modal-content">
@@ -503,13 +503,13 @@
             { date: '2024/02/20', time: '16:51', details: 'Subway', category: 'Food', amount: '-£7.45', description: '/' }
         ];
 
-        // 全局类别数据
+        // Global Category Data
         const categories = {
             income: ['Salaries', 'Gift', 'Invest'],
             outcome: ['Food', 'Commuting', 'Laundry']
         };
 
-        let currentEditIndex = null; // 当前编辑的索引
+        let currentEditIndex = null;
 
         function filterTransactions(type) {
             document.querySelectorAll('.btn-secondary, .btn-success, .btn-danger').forEach(btn => {
@@ -587,12 +587,12 @@
         function openAddModal() {
             const addModal = new bootstrap.Modal(document.getElementById('addModal'));
             addModal.show();
-            updateCategoryDropdown(); // 更新下拉框
+            updateCategoryDropdown(); // Update drop-down box
         }
 
         function deleteTransaction(index) {
             transactions.splice(index, 1);
-            filterTransactions('all'); // 刷新表格
+            filterTransactions('all'); // Refresh table
         }
 			
 		// 全局变量：存储 recurring transactions
