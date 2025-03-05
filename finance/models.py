@@ -16,10 +16,16 @@ class User(AbstractUser):
         help_text='Specific permissions for this user.',
         verbose_name='user permissions',
     )
+
+    def __str__(self) -> str:
+        return self.username
     
 class Currency(models.Model):
     currency_code = models.CharField(max_length=10, unique=True)
     exchange_rate = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self) -> str:
+        return self.currency_code
 
 class Account(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -27,8 +33,14 @@ class Account(models.Model):
     account_type = models.CharField(max_length=50)
     balance = models.DecimalField(max_digits=15, decimal_places=2)
 
+    def __str__(self) -> str:
+        return self.account_name
+
 class Category(models.Model):
     name = models.CharField(max_length=255)
+
+    def __str__(self) -> str:
+        return self.name
 
 class Transaction(models.Model):
     CATEGORY_CHOICES = [
@@ -63,13 +75,22 @@ class RecurringTransaction(models.Model):
     transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE)
     recurring_period = models.CharField(max_length=50)
 
+    def __str__(self) -> str:
+        return self.transaction
+
 class Budget(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     budget_amount = models.DecimalField(max_digits=15, decimal_places=2)
     period = models.DateField()
 
+    def __str__(self) -> str:
+        return self.budget_amount
+
 class Reminder(models.Model):
     recurring_transaction = models.ForeignKey(RecurringTransaction, on_delete=models.CASCADE)
     due_date = models.DateField()
     status = models.BooleanField(default=False)
+
+    def __str__(self) -> str:
+        return self.recurring_transaction

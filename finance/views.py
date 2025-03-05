@@ -1,8 +1,8 @@
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
-from .forms import TransactionForm
-from .models import Transaction
-from .models import User
+from finance.forms import TransactionForm
+from finance.models import Category, Transaction
+from finance.models import User
 from django.contrib import messages
 from django.contrib.auth import authenticate, login as auth_login, logout
 from django.contrib.auth.hashers import make_password
@@ -32,7 +32,7 @@ def register(request):
             )
             auth_login(request, user) 
             messages.success(request, 'Registration successful!')
-            return redirect('system')  # Go to home page
+            return redirect('detail')  # Go to home page
         except Exception as e:
             messages.error(request, 'Registration failed')
             return redirect('register')
@@ -47,18 +47,28 @@ def login_view(request):
         
         if user is not None:
             auth_login(request, user)
-            return redirect('system') 
+            return redirect('detail') 
         else:
             messages.error(request, 'Invalid email or password')
             return redirect('login')
             
     return render(request, 'login.html')
 
-@login_required
-def system(request):
-    return render(request, 'system.html')
 
 def logout_view(request):
     logout(request)
     return redirect('login')
 
+@login_required
+def detail_view(request):
+    transactions = Transaction.objects.all().order_by('date')
+    return render(request, 'detail.html', {'transactions': transactions})
+
+def statistics_view(request):
+    # 可以根據需求計算統計數據，這裡只傳遞一個空 context 作為範例
+    return render(request, 'statistics.html', {})
+
+def management_view(request):
+    # 傳遞管理頁面需要的資料
+    categories = Category.objects.all()
+    return render(request, 'management.html', {'categories': categories})

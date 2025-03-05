@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Wallet Notes - Detail{% endblock %}
+{% block active_detail %}active{% endblock %}
+{% block content %}
+<div id="detail-page">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <ul class="nav nav-tabs">
+      <li class="nav-item">
+        <a class="nav-link active" data-bs-toggle="tab" href="#by-month">By month</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="tab" href="#by-day">By day</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="tab" href="#by-category">By category</a>
+      </li>
+    </ul>
+    <div>
+      <button class="btn btn-primary" onclick="openAddModal()">Add</button>
+      <button class="btn btn-light" onclick="exportToCSV()">Export</button>
+    </div>
+  </div>
+  
+  <div class="tab-content mt-3">
+    <div class="tab-pane fade show active" id="by-month">
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>Date <button id="sortDateBtn">Sort</button></th>
+            <th>Category</th>
+            <th>Amount</th>
+            <th>Description</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="transaction-table-month">
+          {% for t in transactions %}
+          <tr>
+            <td>{{ t.date }}</td>
+            <td>{{ t.category }}</td>
+            <td>{{ t.amount }}</td>
+            <td>{{ t.description }}</td>
+            <td>
+              <button class='btn btn-warning btn-sm' onclick="openEditModal({{ forloop.counter0 }})">Edit</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteTransaction({{ forloop.counter0 }})">Delete</button>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-center">No transactions available</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    
+    <div class="tab-pane fade" id="by-day">
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>Date <button id="sortDateBtn">Sort</button></th>
+            <th>Category</th>
+            <th>Amount</th>
+            <th>Description</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="transaction-table-day">
+          {% for t in transactions %}
+          <tr>
+            <td>{{ t.date }}</td>
+            <td>{{ t.category }}</td>
+            <td>{{ t.amount }}</td>
+            <td>{{ t.description }}</td>
+            <td>
+              <button class="btn btn-warning btn-sm" onclick="openEditModal({{ forloop.counter0 }})">Edit</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteTransaction({{ forloop.counter0 }})">Delete</button>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-center">No transactions available</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    
+    <div class="tab-pane fade" id="by-category">
+      <label for="category-filter">Categories:</label>
+      <select id="category-filter" class="form-select w-25 d-inline-block">
+        <option value="all">All</option>
+        <option value="Food">Food</option>
+        <option value="Commuting">Commuting</option>
+        <option value="Salaries">Salaries</option>
+        <option value="Laundry">Laundry</option>
+      </select>
+      <button class="btn btn-primary" onclick="filterCategory()">Filter</button>
+      <table class="table table-bordered mt-3">
+        <thead>
+          <tr>
+            <th>Date <button id="sortDateBtn">Sort</button></th>
+            <th>Category</th>
+            <th>Amount</th>
+            <th>Description</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="transaction-table-category">
+          {% for t in transactions %}
+          <tr>
+            <td>{{ t.date }}</td>
+            <td>{{ t.category }}</td>
+            <td>{{ t.amount }}</td>
+            <td>{{ t.description }}</td>
+            <td>
+              <button class="btn btn-warning btn-sm" onclick="openEditModal({{ forloop.counter0 }})">Edit</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteTransaction({{ forloop.counter0 }})">Delete</button>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-center">No transactions available</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  
+  <button class="btn btn-secondary" data-filter="all" onclick="filterTransactions('all')">All</button>
+  <button class="btn btn-success" data-filter="in" onclick="filterTransactions('in')">In</button>
+  <button class="btn btn-danger" data-filter="out" onclick="filterTransactions('out')">Out</button>
+</div>
+{% endblock %}
+<script id="transactions-data" type="application/json">
+    {{ transactions|json_script:"transactions-data" }}
+</script>
+<script>
+const transactions = JSON.parse(document.getElementById('transactions-data').textContent);
+console.log(transactions);
+</script>

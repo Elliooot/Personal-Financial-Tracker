@@ -18,11 +18,15 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from finance import views
+from finance.views import detail_view, statistics_view, management_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.login_view, name='login'),
     path('register/', views.register, name='register'),
-    path('system/', views.system, name='system'),
     path('logout/', views.logout_view, name='logout'),
+    path('detail/', views.detail_view, name='detail'),
+    path('statistics/', views.statistics_view, name='statistics'),
+    path('management/', views.management_view, name='management'),
+
 ]

@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Wallet Notes - Statistics{% endblock %}
+{% block active_statistics %}active{% endblock %}
+{% block content %}
+<div id="statistics-page">
+  <h3>Statistics</h3>
+  <div class="row">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          Income and Expenditure
+        </div>
+        <div class="card-body">
+          <h5 class="card-title">Current Month</h5>
+          <p class="card-text">Income: £5000</p>
+          <p class="card-text">Expenditure: £3000</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          Income and Expenditure
+        </div>
+        <div class="card-body">
+          <h5 class="card-title">Current Year</h5>
+          <p class="card-text">Income: £60000</p>
+          <p class="card-text">Expenditure: £40000</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
