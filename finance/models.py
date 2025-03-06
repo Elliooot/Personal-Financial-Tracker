@@ -52,7 +52,7 @@ class Transaction(models.Model):
         ('housing', 'Housing'),
         ('medical', 'Medical'),
         ('investment', 'Investment'),
-        ('others', 'Others'),
+        ('other', 'Other'),
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -63,7 +63,7 @@ class Transaction(models.Model):
     date = models.DateField()
     description = models.TextField()
     transaction_type = models.BooleanField(default=True)  # True for income, False for expense
-    is_recurring = models.BooleanField(default=False)
+    # is_recurring = models.BooleanField(default=False)
     saved_transaction = models.BooleanField(default=False)
 
 
@@ -71,12 +71,12 @@ class Transaction(models.Model):
         return f"{self.category} - {self.amount}"
 
     
-class RecurringTransaction(models.Model):
-    transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE)
-    recurring_period = models.CharField(max_length=50)
+# class RecurringTransaction(models.Model):
+#     transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE)
+#     recurring_period = models.CharField(max_length=50)
 
-    def __str__(self) -> str:
-        return self.transaction
+#     def __str__(self) -> str:
+#         return self.transaction
 
 class Budget(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -87,10 +87,10 @@ class Budget(models.Model):
     def __str__(self) -> str:
         return self.budget_amount
 
-class Reminder(models.Model):
-    recurring_transaction = models.ForeignKey(RecurringTransaction, on_delete=models.CASCADE)
-    due_date = models.DateField()
-    status = models.BooleanField(default=False)
+# class Reminder(models.Model):
+#     recurring_transaction = models.ForeignKey(RecurringTransaction, on_delete=models.CASCADE)
+#     due_date = models.DateField()
+#     status = models.BooleanField(default=False)
 
-    def __str__(self) -> str:
-        return self.recurring_transaction
+#     def __str__(self) -> str:
+#         return self.recurring_transaction

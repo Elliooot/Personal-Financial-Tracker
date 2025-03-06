@@ -103,8 +103,16 @@
                 <option value="housing">Housing</option>
                 <option value="medical">Medical</option>
                 <option value="investment">Investment</option>
-                <option value="others">Others</option>
+                <option value="other">Other</option>
               </select>
+            </div>
+            <div class="mb-3">
+              <label for="editType" class="form-label">Type</label>
+              <input type="text" class="form-control" id="editType" required>
+            </div>
+            <div class="mb-3">
+              <label for="editCurrency" class="form-label">Currency</label>
+              <input type="text" class="form-control" id="editCurrency" required>
             </div>
             <div class="mb-3">
               <label for="editAmount" class="form-label">Amount</label>
@@ -141,7 +149,15 @@
             <div class="mb-3">
               <label for="addCategory" class="form-label">Category</label>
               <select id="addCategory" class="form-control" required>
-                <!-- Categories will be dynamically populated here -->
+                <option value="food">Food</option>
+                <option value="shopping">Shopping</option>
+                <option value="transportation">Transportation</option>
+                <option value="education">Education</option>
+                <option value="entertainment">Entertainment</option>
+                <option value="housing">Housing</option>
+                <option value="medical">Medical</option>
+                <option value="investment">Investment</option>
+                <option value="other">Other</option>
               </select>
             </div>
             <div class="mb-3">
@@ -296,17 +312,23 @@
         document.querySelector('.btn-danger').classList.add('active');
       }
 
-      let filtered = transactions;
+      let filtered = window.transactions || [];
       if (type === 'in') {
-        filtered = transactions.filter(t => t.amount.includes('+'));
+        filtered = transactions.filter(t => t.transaction_type.equals(true));
       } else if (type === 'out') {
-        filtered = transactions.filter(t => t.amount.includes('-'));
+        filtered = transactions.filter(t => t.transaction_type.equals(false));
       }
+
+      updateTable(filtered, "transaction-table-month");
+      updateTable(filtered, "transaction-table-category");
+      updateTable(filtered, "transaction-table-saved");
     }
 
     function filterCategory() {
-      const selectedCategory = document.getElementById('category-filter').value;
-      let filtered = transactions;
+      const filterEl = document.getElementById('category-filter');
+      if (!filterEl) return;
+      const selectedCategory = filterEl.value;
+      let filtered = window.transactions || [];
 
       if (selectedCategory !== 'all') {
         filtered = transactions.filter(t => t.category === selectedCategory);
@@ -318,17 +340,42 @@
       } else if (activeFilter === 'out') {
         filtered = filtered.filter(t => t.amount.includes('-'));
       }
+      updateTable(filtered, "transaction-table-category");
+    }
+
+    function updateTable(data, tableId) {
+        let tableContent = data.map((t, index) => `<tr>
+            <td>${t.date}</td>
+            <td>${t.category}</td>
+            <td>${t.transaction_type}</td>
+            <td>${t.currency}</td>
+            <td>${t.amount}</td>
+            <td>${t.description}</td>
+            <td>
+                <button class='btn btn-success btn-sm' onclick="saveTransaction(${index})">Save</button>
+            </td>
+            <td>
+                <button class='btn btn-warning btn-sm' onclick="openEditModal(${index})">Edit</button>
+                <button class='btn btn-danger btn-sm' onclick="deleteTransaction(${index})">Delete</button>
+            </td>
+        </tr>`).join('');
+        document.getElementById(tableId).innerHTML = tableContent || '<tr><td colspan="7" class="text-center">No data available</td></tr>';
     }
 
     function openEditModal(index) {
-      const transaction = transactions[index];
+      const transaction = window.transactions[index];
+      if (!transaction) {
+        console.error('Transaction not found at index:', index);
+        return;
+      }
       currentEditIndex = index;
 
       document.getElementById('editDate').value = transaction.date;
       document.getElementById('editCategory').value = transaction.category;
+      document.getElementById('editType').value = transaction.transaction_type;
+      document.getElementById('editCurrency').value = transaction.currency;
       document.getElementById('editAmount').value = transaction.amount;
       document.getElementById('editDescription').value = transaction.description;
-      console.log("11111111111111111 " + document.getElementById('editAmount').value);
 
       const editModal = new bootstrap.Modal(document.getElementById('editModal'));
       editModal.show();
@@ -340,9 +387,34 @@
       updateCategoryDropdown(); // Update drop-down box
     }
 
+    // function deleteTransaction(index) {
+    //   transactions.splice(index, 1);
+    //   filterTransactions('all'); // Refresh table
+    // }
+
+    // TODO: edit db
+    // Delete transaction from fronend and in database
     function deleteTransaction(index) {
-      transactions.splice(index, 1);
-      filterTransactions('all'); // Refresh table
+      const transactionId = transactions[index].id;
+
+      fetch("{ url 'delete_transaction' %}", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: 'id=${transactionId}'
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          transactions.splice(index, 1);
+          filterTransactions('all'); // Refresh table
+        }else{
+          console.error('Failed to delete transaction:', data.message);
+        }
+      })
+      .catch(error => console.error('Error:', error));
     }
       
     // 全局变量：存储 recurring transactions
@@ -386,6 +458,7 @@
     // 更新 recurring transactions 表格
     function updateRecurringTransactionsTable() {
       const tableBody = document.getElementById('recurring-transactions-table');
+      if (!tableBody) return;  // 若不存在則直接退出
       tableBody.innerHTML = recurringTransactions.map(transaction => `
         <tr>
           <td>${transaction.day}</td>
@@ -409,10 +482,12 @@
         transactions[currentEditIndex] = {
           date: document.getElementById('editDate').value,
           category: document.getElementById('editCategory').value,
+          type: document.getElementById('editType').value,
+          currency: document.getElementById('editCurrency').value,
           amount: document.getElementById('editAmount').value,
           description: document.getElementById('editDescription').value
         };
-        filterTransactions('all'); // 刷新表格
+        filterTransactions('all'); // Refresh table
         const editModal = bootstrap.Modal.getInstance(document.getElementById('editModal'));
         editModal.hide();
       }
@@ -451,7 +526,9 @@
     // 更新下拉框
     function updateCategoryDropdown() {
       const categoryDropdown = document.getElementById('addCategory');
-      const selectedType = document.getElementById('addType').value;
+      const addTypeEl = document.getElementById('addType');
+      if (!categoryDropdown || !addTypeEl) return;
+      const selectedType = addTypeEl.value;
       categoryDropdown.innerHTML = '';
       categories[selectedType].forEach(category => {
         const option = document.createElement('option');
@@ -461,13 +538,14 @@
       });
     }
 
-    // 更新 Management 页面的类别表格
+    // Update Management Tables
     function updateManagementTables() {
       const incomeTable = document.getElementById('income-categories-table');
       const outcomeTable = document.getElementById('outcome-categories-table');
+      if (!incomeTable || !outcomeTable) return;
 
       // 更新 Income Categories 表格
-      incomeTable.innerHTML = categories.income.map(category => `
+      incomeTable.innerHTML = window.categories.income.map(category => `
         <tr>
           <td>${category}</td>
           <td>Income</td>
@@ -476,7 +554,7 @@
       `).join('');
 
       // 更新 Outcome Categories 表格
-      outcomeTable.innerHTML = categories.outcome.map(category => `
+      outcomeTable.innerHTML = window.categories.outcome.map(category => `
         <tr>
           <td>${category}</td>
           <td>Outcome</td>
@@ -524,6 +602,7 @@
     // 更新 budget 表格
     function updateBudgetTable() {
       const tableBody = document.getElementById('budget-table');
+      if (!tableBody) return;
       tableBody.innerHTML = budgets.map(budget => `
         <tr>
           <td>${budget.yearMonth}</td>
@@ -615,43 +694,11 @@
       }
     });
 
-    // 切换页面功能（原有动态切换代码，若分为独立页面可视需求调整）
-    document.getElementById('detail-link').addEventListener('click', () => {
-      document.getElementById('detail-page').style.display = 'block';
-      document.getElementById('statistics-page').style.display = 'none';
-      document.getElementById('management-page').style.display = 'none';
-      // 移除所有导航项的 active 类
-      document.querySelectorAll('.sidebar a').forEach(link => link.classList.remove('active'));
-      // 为当前选中的导航项添加 active 类
-      document.getElementById('detail-link').classList.add('active');
-    });
-
-    document.getElementById('statistics-link').addEventListener('click', () => {
-      document.getElementById('detail-page').style.display = 'none';
-      document.getElementById('statistics-page').style.display = 'block';
-      document.getElementById('management-page').style.display = 'none';
-      // 移除所有导航项的 active 类
-      document.querySelectorAll('.sidebar a').forEach(link => link.classList.remove('active'));
-      // 为当前选中的导航项添加 active 类
-      document.getElementById('statistics-link').classList.add('active');
-    });
-
-    document.getElementById('management-link').addEventListener('click', () => {
-      document.getElementById('detail-page').style.display = 'none';
-      document.getElementById('statistics-page').style.display = 'none';
-      document.getElementById('management-page').style.display = 'block';
-      // 移除所有导航项的 active 类
-      document.querySelectorAll('.sidebar a').forEach(link => link.classList.remove('active'));
-      // 为当前选中的导航项添加 active 类
-      document.getElementById('management-link').classList.add('active');
-      updateManagementTables(); // 更新 Management 页面的表格
-    });
-
     document.addEventListener("DOMContentLoaded", () => {
       filterTransactions('all');
       filterCategory();
-      updateCategoryDropdown(); // 初始化下拉框
-      updateManagementTables(); // 初始化 Management 页面的表格
+      updateCategoryDropdown(); // Refresh drop-down box
+      updateManagementTables(); // Initialize Management Table
     });
   </script>
   

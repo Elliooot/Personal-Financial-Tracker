@@ -1,8 +1,10 @@
 from django.shortcuts import render, redirect
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
+from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
+from rich import _console
 from finance.forms import TransactionForm
-from finance.models import Category, Transaction
-from finance.models import User
+from finance.models import User, Category, Transaction
 from django.contrib import messages
 from django.contrib.auth import authenticate, login as auth_login, logout
 from django.contrib.auth.hashers import make_password
@@ -62,7 +64,31 @@ def logout_view(request):
 @login_required
 def detail_view(request):
     transactions = Transaction.objects.all().order_by('date')
-    return render(request, 'detail.html', {'transactions': transactions})
+    categories = Category.objects.all()
+
+    # Serialize transactions and categories for JSON
+    transactions_data = [
+        {
+            'date': t.date.strftime('%Y-%m-%d'),
+            'category': t.category,
+            'amount': str(t.amount),
+            'description': t.description,
+            'transaction_type': "Income" if t.transaction_type else "Expenditure",
+            'currency': t.currency.currency_code
+        } for t in transactions
+    ]
+
+    return render(request, 'detail.html', {'transactions': transactions_data, })
+
+@csrf_exempt
+def delete_transaction_view(request):
+    try:
+        transaction_id = request.POST.get('transaction_id')
+        Transaction.objects.get(id=transaction_id).delete()
+        _console.log('Transaction deleted')
+        return JsonResponse({'status': 'success'})
+    except Transaction.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Transaction not found'}, status=404)
 
 def statistics_view(request):
     # 可以根據需求計算統計數據，這裡只傳遞一個空 context 作為範例
