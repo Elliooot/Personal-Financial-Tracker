@@ -154,11 +154,14 @@
   <button class="btn btn-success" data-filter="in" onclick="filterTransactions('in')">In</button>
   <button class="btn btn-danger" data-filter="out" onclick="filterTransactions('out')">Out</button>
 </div>
+{% endblock %}
 
-{{ transactions|default:"[]"|json_script:"transactions-data" }}
-{{ categories_json|default:"{}"|json_script:"categories-data" }}
+{% block page_scripts %}
+  {{ transactions|default:"[]"|json_script:"transactions-data" }}
+  {{ categories_json|default:"{}"|json_script:"categories-data" }}
+{% endblock %}
 
-<script>
+<!-- <script>
   const transactionsDataElement = document.getElementById('transactions-data');
   let transactionsRaw = transactionsDataElement ? transactionsDataElement.textContent : '[]';
   try {
@@ -187,5 +190,4 @@
     updateCategoryDropdown();
     updateManagementTables();
   });
-</script>
-{% endblock %}
+</script> -->

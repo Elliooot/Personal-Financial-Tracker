@@ -1,9 +1,10 @@
+import json
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from rich import _console
-from finance.forms import TransactionForm
+from finance.forms import CategoryForm, TransactionForm
 from finance.models import User, Category, Transaction
 from django.contrib import messages
 from django.contrib.auth import authenticate, login as auth_login, logout
@@ -69,6 +70,7 @@ def detail_view(request):
     # Serialize transactions and categories for JSON
     transactions_data = [
         {
+            'id': t.id,
             'date': t.date.strftime('%Y-%m-%d'),
             'category': t.category.name,
             'amount': str(t.amount),
@@ -94,19 +96,55 @@ def detail_view(request):
 
 @csrf_exempt
 def delete_transaction_view(request):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
+    
     try:
         transaction_id = request.POST.get('transaction_id')
+
+        if not transaction_id:
+            return JsonResponse({'status': 'error', 'message': 'Transaction ID is required'}, status=400)
+
         Transaction.objects.get(id=transaction_id).delete()
-        _console.log('Transaction deleted')
+
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info('Transaction deleted')
+
         return JsonResponse({'status': 'success'})
     except Transaction.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'Transaction not found'}, status=404)
-
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    
 def statistics_view(request):
-    # 可以根據需求計算統計數據，這裡只傳遞一個空 context 作為範例
+
     return render(request, 'statistics.html', {})
 
 def management_view(request):
-    # 傳遞管理頁面需要的資料
+    # Get all category objects from database; categories is a QuerySet
     categories = Category.objects.all()
-    return render(request, 'management.html', {'categories': categories})
+
+    # Serialize categories data
+    income__categories = [c.name for c in categories if c.is_income]
+    expense_categories = [c.name for c in categories if not c.is_income]
+
+    categories_data = {
+        'true': income__categories,
+        'false': expense_categories
+    }
+
+    return render(request, 'management.html', {
+        'categories': categories, # Original categories object
+        'categories_json': categories_data # JSON data for categories
+    })
+
+def add_category(request):
+    if request.method == 'POST':
+        form = CategoryForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('management')
+    else:
+        form = CategoryForm()
+    return render(request, 'add_category.html', {'form': form})

@@ -54,7 +54,6 @@ class Transaction(models.Model):
     transaction_type = models.BooleanField(default=True)  # True for income, False for expense
     saved_transaction = models.BooleanField(default=False)
 
-
     def __str__(self):
         return f"{self.category} - {self.amount}"
 

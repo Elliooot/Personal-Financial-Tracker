@@ -11,12 +11,12 @@ from decimal import Decimal
 class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         transactions = [
-            { 'date': '2024/02/01', 'category': 'Transportation', 'transaction_type': 'Expenditure', 'currency': '£', 'amount': '2.95', 'description': 'First Glasgow' },
+            { 'date': '2024/02/01', 'category': 'Transportation', 'transaction_type': 'Expense', 'currency': '£', 'amount': '2.95', 'description': 'First Glasgow' },
             { 'date': '2024/02/01', 'category': 'Investment',     'transaction_type': 'Income',      'currency': '£', 'amount': '4000', 'description': 'CHRIS LIU' },
-            { 'date': '2024/02/03', 'category': 'Food',           'transaction_type': 'Expenditure', 'currency': '£', 'amount': '7.45', 'description': 'Subway' },
-            { 'date': '2024/02/03', 'category': 'Shopping',       'transaction_type': 'Expenditure', 'currency': '£', 'amount': '4.90', 'description': 'Circuit top up' },
-            { 'date': '2024/02/16', 'category': 'Food',           'transaction_type': 'Expenditure', 'currency': '£', 'amount': '7.45', 'description': 'Subway' },
-            { 'date': '2024/02/20', 'category': 'Food',           'transaction_type': 'Expenditure', 'currency': '£', 'amount': '7.45', 'description': 'Subway' }
+            { 'date': '2024/02/03', 'category': 'Food',           'transaction_type': 'Expense', 'currency': '£', 'amount': '7.45', 'description': 'Subway' },
+            { 'date': '2024/02/03', 'category': 'Shopping',       'transaction_type': 'Expense', 'currency': '£', 'amount': '4.90', 'description': 'Circuit top up' },
+            { 'date': '2024/02/16', 'category': 'Food',           'transaction_type': 'Expense', 'currency': '£', 'amount': '7.45', 'description': 'Subway' },
+            { 'date': '2024/02/20', 'category': 'Food',           'transaction_type': 'Expense', 'currency': '£', 'amount': '7.45', 'description': 'Subway' }
         ]
 
         # Get default objects: Please ensure these objects exist or create them as needed.

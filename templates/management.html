@@ -77,3 +77,7 @@
   </div>
 </div>
 {% endblock %}
+
+{% block page_scripts %}
+  {{ categories_json|default:"{}"|json_script:"categories-data" }}
+{% endblock %}
