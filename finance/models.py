@@ -38,6 +38,7 @@ class Account(models.Model):
 
 class Category(models.Model):
     name = models.CharField(max_length=255)
+    is_income = models.BooleanField(default=false)
 
     def __str__(self) -> str:
         return self.name
