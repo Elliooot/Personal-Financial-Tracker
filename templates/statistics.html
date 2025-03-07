@@ -3,32 +3,138 @@
 {% block active_statistics %}active{% endblock %}
 {% block content %}
 <div id="statistics-page">
-  <h3>Statistics</h3>
-  <div class="row">
-    <div class="col-md-6">
+  <div class="row mb-2 g-2">
+    <!-- Statistics Block -->
+    <div class="col-md-3">
       <div class="card">
         <div class="card-header">
-          Income and Expenditure
+          Statistics
         </div>
         <div class="card-body">
-          <h5 class="card-title">Current Month</h5>
-          <p class="card-text">Income: £5000</p>
-          <p class="card-text">Expenditure: £3000</p>
+          <div class="stat-item in">
+            <span>In</span>
+            <h3>+1,000 £</h3>
+          </div>
+          <div class="stat-item out">
+            <span>Out</span>
+            <h3>-2,000 £</h3>
+          </div>
+          <div class="stat-item save">
+            <span>Save</span>
+            <h3>-1,000 £</h3>
+          </div>
         </div>
       </div>
     </div>
+
+    <!-- Budget Block -->
+    <div class="col-md-3">
+      <div class="card">
+        <div class="card-header">
+          Budget
+        </div>
+        <div class="card-body">
+          <canvas id="budgetChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Income and Expense Block -->
     <div class="col-md-6">
       <div class="card">
         <div class="card-header">
-          Income and Expenditure
+          Income and Expense
         </div>
         <div class="card-body">
-          <h5 class="card-title">Current Year</h5>
-          <p class="card-text">Income: £60000</p>
-          <p class="card-text">Expenditure: £40000</p>
+          <canvas id="incomeExpenseChart"></canvas>
         </div>
       </div>
     </div>
   </div>
+
+  <div class="row g-2">
+    <!-- Expense Block -->
+    <div class="col-md-3">
+      <div class="card">
+        <div class="card-header">
+          Expense
+        </div>
+        <div class="card-body">
+          <canvas id="expensePieChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Income Block -->
+    <div class="col-md-3">
+      <div class="card">
+        <div class="card-header">
+          Income
+        </div>
+        <div class="card-body">
+          <canvas id="incomePieChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Expense Ranking Block -->
+    <div class="col-md-3">
+      <div class="card">
+        <div class="card-header">
+          Expense Ranking
+        </div>
+        <div class="card-body">
+          <canvas id="expenseRanking"></canvas>
+        </div>
+      </div>
+    </div>   
+    
+    <!-- Income Ranking Block -->
+    <div class="col-md-3">
+      <div class="card">
+        <div class="card-header">
+          Income Ranking
+        </div>
+        <div class="card-body">
+          <canvas id="incomeRanking"></canvas>
+        </div>
+      </div>
+    </div>    
+  </div>
 </div>
+
+<!-- CSS -->
+<style>
+
+.card-header {
+    padding: 0.3rem 1rem;     /* 上下邊距；（預設是 1rem 1rem）*/
+    font-size: 1rem;
+}
+
+.stat-item {
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  background-color: #00bcd4;
+  color: white;
+}
+
+.stat-item span {
+  font-size: 14px;
+}
+
+.stat-item h3 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.card {
+  height: 100%;
+  margin-bottom: 10px;
+}
+
+</style>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 {% endblock %}
