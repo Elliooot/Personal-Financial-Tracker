@@ -70,15 +70,27 @@ def detail_view(request):
     transactions_data = [
         {
             'date': t.date.strftime('%Y-%m-%d'),
-            'category': t.category,
+            'category': t.category.name,
             'amount': str(t.amount),
             'description': t.description,
-            'transaction_type': "Income" if t.transaction_type else "Expenditure",
+            'transaction_type': t.transaction_type,
             'currency': t.currency.currency_code
         } for t in transactions
     ]
 
-    return render(request, 'detail.html', {'transactions': transactions_data, })
+    income_categories = [c.name for c in categories if c.is_income]
+    expense_categories = [c.name for c in categories if not c.is_income]
+    
+    categories_data = {
+        'true': income_categories,  # income
+        'false': expense_categories  # Expense
+    }
+
+    return render(request, 'detail.html', {
+        'transactions': transactions_data, 
+        'categories_json': categories_data,
+        'categories': categories # Keep original categories for modal selection
+    })
 
 @csrf_exempt
 def delete_transaction_view(request):

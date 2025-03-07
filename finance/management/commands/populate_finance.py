@@ -19,7 +19,7 @@ class Command(BaseCommand):
             { 'date': '2024/02/20', 'category': 'Food',           'transaction_type': 'Expenditure', 'currency': '£', 'amount': '7.45', 'description': 'Subway' }
         ]
 
-        # Get default objects: Please make sure these objects exist in the database, or create them as needed
+        # Get default objects: Please ensure these objects exist or create them as needed.
         default_user = User.objects.first()
         default_account = Account.objects.first()
         default_currency = Currency.objects.first()
@@ -33,20 +33,21 @@ class Command(BaseCommand):
             transaction_type = True if data['transaction_type'] == 'Income' else False
             cleaned_amount = Decimal(data['amount'].replace('£', ''))
             
-            created = Transaction.objects.create(
+            cat_obj, created = Category.objects.get_or_create(name=data['category'])
+            if created:
+                self.stdout.write(self.style.SUCCESS(f"Created category: {data['category']}"))
+
+            Transaction.objects.create(
                 user=default_user,
                 account=default_account,
                 currency=default_currency,
                 date=date_obj,
-                category=data['category'],
-                amount=cleaned_amount,
+                category=cat_obj,
+                amount=Decimal(data['amount']),
                 description=data['description'],
                 transaction_type=transaction_type,
                 saved_transaction=False
             )
-            if created:
-                self.stdout.write(self.style.NOTICE(f"Transaction {data['description']} already exists"))
-            else:
-                self.stdout.write(self.style.SUCCESS(f"Inserted transaction: {data['description']}"))
+            self.stdout.write(self.style.SUCCESS(f"Inserted transaction: {data['description']}"))
 
         self.stdout.write(self.style.SUCCESS("All transactions have been populated."))

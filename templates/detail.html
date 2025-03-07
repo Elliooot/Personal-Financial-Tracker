@@ -27,7 +27,7 @@
       <table class="table table-bordered">
         <thead>
           <tr>
-            <th>Date <button id="sortDateBtn">Sort</button></th>
+            <th>Date</th>
             <th>Category</th>
             <th>Type</th>
             <th>Currency</th>
@@ -79,7 +79,7 @@
       <table class="table table-bordered mt-3">
         <thead>
           <tr>
-            <th>Date <button id="sortDateBtn">Sort</button></th>
+            <th>Date</th>
             <th>Category</th>
             <th>Type</th>
             <th>Currency</th>
@@ -116,7 +116,7 @@
       <table class="table table-bordered">
         <thead>
           <tr>
-            <th>Date <button id="sortDateBtn">Sort</button></th>
+            <th>Date</th>
             <th>Category</th>
             <th>Type</th>
             <th>Currency</th>
@@ -156,21 +156,30 @@
 </div>
 
 {{ transactions|default:"[]"|json_script:"transactions-data" }}
-{{ categories|json_script:"categories-data" }}
+{{ categories_json|default:"{}"|json_script:"categories-data" }}
 
 <script>
   const transactionsDataElement = document.getElementById('transactions-data');
   let transactionsRaw = transactionsDataElement ? transactionsDataElement.textContent : '[]';
-  
   try {
     window.transactions = JSON.parse(transactionsRaw);
   } catch (e) {
     console.error('Failed to parse transactions data:', e);
-    console.log('Raw content:', transactionsRaw);
     window.transactions = [];
   }
-  console.log('Transactions:', window.transactions);
 
+  const categoriesDataElement = document.getElementById('categories-data');
+  let categoriesRaw = categoriesDataElement ? categoriesDataElement.textContent : '{}';
+  try {
+    window.categories = JSON.parse(categoriesRaw);
+  } catch (e) {
+    console.error('Failed to parse categories data:', e);
+    window.categories = {'true': [], 'false': []};
+  }
+
+  console.log('Transactions:', window.transactions);
+  console.log('Categories:', window.categories);
+  
   // Ensure DOM is loaded before running initialization functions
   document.addEventListener("DOMContentLoaded", () => {
     filterTransactions('all');
