@@ -29,4 +29,6 @@ urlpatterns = [
     path('statistics/', views.statistics_view, name='statistics'),
     path('management/', views.management_view, name='management'),
     path('delete-transaction/', delete_transaction_view, name='delete_transaction'),
+    path('api/transactions/dates/', views.get_transaction_dates, name='transaction_dates'),
+    path('api/statistics/data/', views.get_statistics_data, name='statistics_data'),
 ]

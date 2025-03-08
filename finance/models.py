@@ -38,7 +38,7 @@ class Account(models.Model):
 
 class Category(models.Model):
     name = models.CharField(max_length=255)
-    is_income = models.BooleanField(default=false)
+    # is_income = models.BooleanField(default=False)
 
     def __str__(self) -> str:
         return self.name
@@ -62,14 +62,14 @@ class Transaction(models.Model):
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
     currency = models.ForeignKey(Currency, on_delete=models.CASCADE)
     date = models.DateField()
-    description = models.TextField()
+    description = models.TextField(blank=True, null=True)
     transaction_type = models.BooleanField(default=True)  # True for income, False for expense
     # is_recurring = models.BooleanField(default=False)
     saved_transaction = models.BooleanField(default=False)
 
 
     def __str__(self):
-        return f"{self.category} - {self.amount}"
+        return f"{self.get_category_display()} - {self.amount} - {self.date}"
 
     
 # class RecurringTransaction(models.Model):

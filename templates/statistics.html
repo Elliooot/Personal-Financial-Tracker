@@ -2,11 +2,118 @@
 {% block title %}Wallet Notes - Statistics{% endblock %}
 {% block active_statistics %}active{% endblock %}
 {% block content %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
 
+<style>
+
+  .container {
+    margin-bottom: 10px;
+  }
+  
+  .btn {
+    font-size: 14px; 
+  }
+
+  .col-auto {
+    margin-right: -20px;
+  }
+  
+  .filter-btn {
+    background-color: #a5a5a5;  
+    color: white; 
+    border-radius: 5px; 
+  }
+  
+  .filter-btn:hover { 
+    background-color: #454545;  
+    color: white;  
+  }
+
+  .filter-btn.active {
+    background-color: #00bcd4 !important;
+    border-color: #00bcd4 !important;
+    color: white !important;
+  }
+  
+  .row {
+    display: flex;
+    flex-wrap: nowrap;  /* prevent line break */
+    overflow-x: auto;   /* allow horizontal scroll */
+  }
+  
+  .card-header {
+      padding: 0.3rem 1rem;   /* top and bottom margin; left and right margin (default is 1rem 1rem)*/
+      font-size: 1rem;
+  }
+  
+  .card {
+    /* margin-bottom: 10px; card bottom margin */
+    height: auto;  /* auto adjust card height based on content */
+  }
+  
+  .stat-item {
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    background-color: #00bcd4;
+    color: white;
+  }
+  
+  .stat-item span {
+    font-size: 14px;
+  }
+  
+  .stat-item h3 {
+    margin: 0;
+    font-size: 24px;
+  }
+  
+  canvas {
+    width: 100%;     
+    height: 100%;   
+  }
+  
+  .piechartcard-body {
+    display: flex;
+    flex-direction: column;  
+    justify-content: left; 
+    align-items: center;   
+    padding: 10px;
+  }
+    
+</style>  
 
 <div id="statistics-page">
+  <div class="container">
+    <div class="row justify-content-start align-items-center">
+      <!-- Year button -->
+      <div class="col-auto">
+        <button class="btn btn-sm filter-btn" onclick="switchMode('year')">By Year</button>
+      </div>
+  
+      <!-- Month button -->
+      <div class="col-auto">
+        <button class="btn btn-sm filter-btn" onclick="switchMode('month')">By Month</button>
+      </div>
+
+      <!-- Year dropdown -->
+      <div class="col-auto">
+        <select id="yearSelect" class="form-select form-select-sm w-auto d-inline-block">
+        </select>
+      </div>
+
+      <!-- Month dropdown -->
+      <div class="col-auto">
+        <select id="monthSelect" class="form-select form-select-sm w-auto d-inline-block">
+        </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- First Row -->
   <div class="row mb-2 g-2">
     <!-- Statistics Block -->
     <div class="col-md-3">
@@ -17,15 +124,15 @@
         <div class="card-body">
           <div class="stat-item in">
             <span>In</span>
-            <h3>+1,000 £</h3>
+            <h3>0.00 £</h3>
           </div>
           <div class="stat-item out">
             <span>Out</span>
-            <h3>-2,000 £</h3>
+            <h3>0.00 £</h3>
           </div>
           <div class="stat-item balance">
             <span>Balance</span>
-            <h3>-1,000 £</h3>
+            <h3>0.00 £</h3>
           </div>
         </div>
       </div>
@@ -40,44 +147,44 @@
         <div class="card-body">
           <canvas id="budgetChart" width="300" height="00"></canvas>
           <script>
-            var ctx = document.getElementById('budgetChart');
-            Chart.register(ChartDataLabels); // 這行代碼註冊了 ChartDataLabels 插件。該插件的功能是將數據標籤顯示在圖表中，並可以對標籤的外觀進行自定義（例如顏色、位置等）。這是為了在圖表中顯示數值標籤。
-            
-            var myChart = new Chart(ctx, {
-              type: 'doughnut',
-              plugins: [ChartDataLabels], // 這表示在該圖表中啟用 ChartDataLabels 插件，並且允許在圖表上顯示數據標籤。
+            var budgetCtx = document.getElementById('budgetChart');
+            Chart.register(ChartDataLabels); // register ChartDataLabels plugin
 
-              data: { // Budget pie chart 資訊
+            var budgetChart = new Chart(budgetCtx, {
+              type: 'doughnut',
+              plugins: [ChartDataLabels],  // enable ChartDataLabels plugin
+
+              data: { // Budget pie chart info
                 labels: ["Used", "Remiaining"],
                 datasets: [{
                   data: [12, 19],
-                  backgroundColor: ['#A8DFF1', '#ECBA73', '#F5E2D4', '#024757'], // 顏色
+                  backgroundColor: ['#A8DFF1', '#ECBA73', '#F5E2D4', '#024757'], 
                   datalabels: {
                     color: '#FFCE56'
                   }
                 }],
               },
 
-              options: { // Budget pie chart 設計
+              options: { // Budget pie chart design
                 responsive: true,
                 plugins: {
-                  legend: { // [小圖標]
-                    position: 'bottom',  // 設定圖例在餅圖下面
+                  legend: {
+                    position: 'bottom',  // set legend below pie chart
                     labels: {
-                      boxWidth: 20,  // 設定顏色框的寬度（預設40）
+                      boxWidth: 20,  // set color box width (default is 40)
                     }
                   },
-                  datalabels: { // [餅上的數字]
+                  datalabels: { // [numbers on pie chart]
                     anchor: 'center',
                     align: 'center',
                     formatter: (val, ctx) => {
-                      var total = ctx.dataset.data.reduce((acc, num) => acc + num, 0); // 取總
-                      var percentage = Math.round((val / total) * 100); // 計算百分比，四捨五入到整數
-                      return percentage + '%';  // 顯示
+                      var total = ctx.dataset.data.reduce((acc, num) => acc + num, 0);
+                      var percentage = Math.round((val / total) * 100); // calculate percentage, round to integer
+                      return percentage + '%';
                     },
                     labels: {
                       value: {
-                        color: 'black' // 預設數字標籤 = 黃色
+                        color: 'black'
                       }
                     }
                   }
@@ -89,7 +196,7 @@
       </div>
     </div>
 
-    <!-- Income and Expense Block -->
+    <!-- Income and Expense Line Chart Block -->
     <div class="col-md-6">
       <div class="card">
         <div class="card-header">
@@ -98,34 +205,33 @@
         <div class="card-body">
           <canvas id="incomeExpenseChart"></canvas>
 
-          <script>
-            const xValues = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-            
-            new Chart("incomeExpenseChart", {
+          <script>            
+            const incomeExpenseChart = new Chart("incomeExpenseChart", {
               type: "line",
               data: {
-                labels: xValues,
+                labels: [],
                 datasets: [{ 
                   label: 'Expense',
-                  data: [860,1140,1060,1060,1070,1110,1330,2210,7830,2478,1010,1111,1212],
+                  data: [],
                   borderColor: "#A8DFF1",
                   pointBackgroundColor: "#A8DFF1",
                   fill: false
                 }, { 
                   label: 'Income',
-                  data: [1600,1700,1700,1900,2000,2700,4000,5000,6000,7000,8000,9000],
+                  data: [],
                   borderColor: "#ECBA73",
                   pointBackgroundColor: "#ECBA73",
                   fill: false
                 }, { 
                   label: 'Balance',
-                  data: [300,700,2000,5000,6000,4000,2000,1000,200,100,200,300,400],
+                  data: [],
                   borderColor: "#F5E2D4",
                   pointBackgroundColor: "#F5E2D4",
                   fill: false
                 }]
               },
               options: {
+                responsive: true,
                 plugins: {
                   legend: {
                     display: true,
@@ -137,27 +243,49 @@
                     }
                   },
                   datalabels: {
-                    display: false // 如果您使用了 datalabels 插件
+                    display: false 
                   }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: '#f0f0f0'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return value + ' £';
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
                 },
                 elements: {
                   point: {
-                    radius: 5, // 設置點的大小
-                    hoverRadius: 8, // 懸停時的大小
+                    radius: 5,
+                    hoverRadius: 8,
+                  },
+                  line: {
+                    tension: 0.1
                   }
                 }
               }
             });
-            </script>
+          </script>
             
         </div>
       </div>
     </div>
   </div>
 
+  <!-- Second Row -->
   <div class="row g-2">
     <!-- Expense Block -->
-    <div class="col-md-3">
+    <div class="col-lg-3 col-md-6">
       <div class="card">
         <div class="card-header">
           Expense
@@ -165,44 +293,47 @@
         <div class="piechartcard-body">
           <canvas id="expensePieChart"></canvas>
           <script>
-            var ctx = document.getElementById('expensePieChart');
-            Chart.register(ChartDataLabels); // 這行代碼註冊了 ChartDataLabels 插件。該插件的功能是將數據標籤顯示在圖表中，並可以對標籤的外觀進行自定義（例如顏色、位置等）。這是為了在圖表中顯示數值標籤。
-            
-            var myChart = new Chart(ctx, {
+            const expenseCtx = document.getElementById('expensePieChart');
+            Chart.register(ChartDataLabels);
+  
+            const expenseChart = new Chart(expenseCtx, {
               type: 'doughnut',
-              plugins: [ChartDataLabels], // 這表示在該圖表中啟用 ChartDataLabels 插件，並且允許在圖表上顯示數據標籤。
+              plugins: [ChartDataLabels],
 
-              data: { // Expense pie chart 資訊
-                labels: ["Food", "Entertainment", "Transportation", "Housing"],
+              data: {
+                labels: ['No Expense Data'],  
                 datasets: [{
-                  data: [1000, 200, 300, 700],
-                  backgroundColor: ['#A8DFF1', '#ECBA73', '#F5E2D4', '#024757'], // 顏色
+                  data: [1],  
+                  backgroundColor: ['#E0E0E0'],
                   datalabels: {
                     color: '#FFCE56'
                   }
-                }],
+                }]
               },
 
-              options: { // Expense pie chart 設計
+              options: {
                 responsive: true,
                 plugins: {
-                  legend: { // [小圖標]
-                    position: 'bottom',  // 設定圖例在餅圖下面
+                  legend: {
+                    position: 'bottom',
                     labels: {
-                      boxWidth: 20,  // 設定顏色框的寬度（預設40）
+                      boxWidth: 20
                     }
                   },
-                  datalabels: { // [餅上的數字]
+                  datalabels: {
                     anchor: 'center',
                     align: 'center',
                     formatter: (val, ctx) => {
-                      var total = ctx.dataset.data.reduce((acc, num) => acc + num, 0); // 取總
-                      var percentage = Math.round((val / total) * 100); // 計算百分比，四捨五入到整數
-                      return percentage + '%';  // 顯示
+                      if (ctx.chart.data.labels[0] === 'No Expense Data') {
+                        return 'No Data';
+                      }
+                      var total = ctx.dataset.data.reduce((acc, num) => acc + num, 0);
+                      var percentage = Math.round((val / total) * 100);
+                      return percentage + '%';
                     },
                     labels: {
                       value: {
-                        color: 'black' // 預設數字標籤 = 黃色
+                        color: 'black'
                       }
                     }
                   }
@@ -215,114 +346,91 @@
     </div>
 
     <!-- Income Block -->
-    <div class="col-md-3">
+    <div class="col-lg-3 col-md-6">
       <div class="card">
         <div class="card-header">
           Income
         </div>
-        
         <div class="piechartcard-body">
           <canvas id="incomePieChart"></canvas>
           <script>
-            var ctx = document.getElementById('incomePieChart');
-            Chart.register(ChartDataLabels); // 這行代碼註冊了 ChartDataLabels 插件。該插件的功能是將數據標籤顯示在圖表中，並可以對標籤的外觀進行自定義（例如顏色、位置等）。這是為了在圖表中顯示數值標籤。
-            
-            var myChart = new Chart(ctx, {
+            const incomeCtx = document.getElementById('incomePieChart');
+            Chart.register(ChartDataLabels);
+  
+            const incomeChart = new Chart(incomeCtx, {
               type: 'doughnut',
-              plugins: [ChartDataLabels], // 這表示在該圖表中啟用 ChartDataLabels 插件，並且允許在圖表上顯示數據標籤。
+              plugins: [ChartDataLabels],
 
-              data: { // Income pie chart 資訊
-                labels: ["Salary", "Interest", "Investmnet", "Gift"],
+              data: {
+                labels: ['No Income Data'],  
                 datasets: [{
-                  data: [1000, 200, 800, 500],
-                  backgroundColor: ['#A8DFF1', '#ECBA73', '#F5E2D4', '#024757'], // 顏色
+                  data: [1],  
+                  backgroundColor: ['#E0E0E0'],
                   datalabels: {
                     color: '#FFCE56'
                   }
-                }],
+                }]
               },
 
-              options: { // Income pie chart 設計
+              options: {
                 responsive: true,
                 plugins: {
-                  legend: { // [小圖標]
-                    position: 'bottom',  // 設定圖例在餅圖下面
+                  legend: {
+                    position: 'bottom',
                     labels: {
-                      boxWidth: 20,  // 設定顏色框的寬度（預設40）
+                      boxWidth: 20
                     }
                   },
-                  datalabels: { // [餅上的數字]
+                  datalabels: {
                     anchor: 'center',
                     align: 'center',
                     formatter: (val, ctx) => {
-                      var total = ctx.dataset.data.reduce((acc, num) => acc + num, 0); // 取總
-                      var percentage = Math.round((val / total) * 100); // 計算百分比，四捨五入到整數
-                      return percentage + '%';  // 顯示
+                      if (ctx.chart.data.labels[0] === 'No Income Data') {
+                        return 'No Data';
+                      }
+                      var total = ctx.dataset.data.reduce((acc, num) => acc + num, 0);
+                      var percentage = Math.round((val / total) * 100);
+                      return percentage + '%';
                     },
                     labels: {
                       value: {
-                        color: 'black' // 預設數字標籤 = 黃色
+                        color: 'black'
                       }
                     }
                   }
                 }
               }
             });
-          </script>        
+          </script>
         </div>
       </div>
     </div>
 
     <!-- Expense Ranking Block -->
-    <div class="col-md-3">
+    <div class="col-lg-3 col-md-6">
       <div class="card">
         <div class="card-header">
           Expense Ranking
         </div>
-          <div class="card-body">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>Rank</th>
-                  <th>Category</th>
-                  <th>Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr class="rank-item expense1">
-                  <td>1</td>
-                  <td>Food</td>
-                  <td>1,000 £</td>
-                </tr>
-                <tr class="rank-item expense2">
-                  <td>2</td>
-                  <td>Housing</td>
-                  <td>500 £</td>
-                </tr>
-                <tr class="rank-item expense3">
-                  <td>3</td>
-                  <td>Entertainment</td>
-                  <td>400 £</td>
-                </tr>
-                <tr class="rank-item expense4">
-                  <td>4</td>
-                  <td>Transportation</td>
-                  <td>300 £</td>
-                </tr>
-                <tr class="rank-item expense5">
-                  <td>5</td>
-                  <td>Health</td>
-                  <td>100 £</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+        <div class="card-body">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Category</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tbody id="expenseRankingTable">
+            </tbody>
+          </table>
         </div>
       </div>
     </div>   
     
     <!-- Income Ranking Block -->
-    <div class="col-md-3">
+    <div class="col-lg-3 col-md-6">
       <div class="card">
         <div class="card-header">
           Income Ranking
@@ -337,31 +445,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr class="rank-item income1">
-                <td>1</td>
-                <td>Salary</td>
-                <td>3,000 £</td>
-              </tr>
-              <tr class="rank-item income2">
-                <td>2</td>
-                <td>Interest</td>
-                <td>100 £</td>
-              </tr>
-              <tr class="rank-item income3">
-                <td>3</td>
-                <td>Longterm Investment</td>
-                <td>2,000 £</td>
-              </tr>
-              <tr class="rank-item income4">
-                <td>4</td>
-                <td>Gift</td>
-                <td>200 £</td>
-              </tr>
-              <tr class="rank-item income5">
-                <td>5</td>
-                <td>Bonus</td>
-                <td>300 £</td>
-              </tr>
+              <tbody id="incomeRankingTable">
             </tbody>
           </table>
         </div>
@@ -369,69 +453,6 @@
     </div>    
   </div>
 </div>
-
-<!-- CSS -->
-<style>
-
-.card-header {
-    padding: 0.3rem 1rem;     /* 上下邊距；（預設是 1rem 1rem）*/
-    font-size: 1rem;
-}
-
-.card {
-  /* margin-bottom: 10px; 卡片底部邊距 */
-  height: auto;  /* 自動根據內容調整卡片的高度 */
-}
-
-.stat-item { /* 收入支出餘額小框 */
-  padding: 10px;
-  margin-bottom: 10px;
-  border-radius: 8px;
-  background-color: #00bcd4;
-  color: white;
-}
-
-.stat-item span {  /* 收入支出餘額小框_文字 */
-  font-size: 14px;
-}
-
-.stat-item h3 { /* 收入支出餘額小框_金額 */
-  margin: 0;
-  font-size: 24px;
-}
-
-canvas {
-  width: 100%;     
-  height: 100%;   
-}
-
-.piechartcard-body {
-  display: flex;
-  flex-direction: column;  
-  justify-content: left; 
-  align-items: center;   
-  padding: 10px;
-}
-
-.rank-item { 
-  padding: 10px;
-  margin-bottom: 10px;
-  border-radius: 8px;
-  background-color: #00bcd4;
-  color: white;
-}
-
-.stat-item span {  
-  font-size: 14px;
-}
-
-.stat-item h3 { 
-  margin: 0;
-  font-size: 24px;
-}
-
-
-</style>
 
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
