@@ -65,7 +65,7 @@ def logout_view(request):
 
 @login_required
 def detail_view(request):
-    transactions = Transaction.objects.all().order_by('date')
+    transactions = Transaction.objects.all().order_by('-date')
     categories = Category.objects.all()
 
     # Serialize transactions and categories for JSON
@@ -92,7 +92,7 @@ def detail_view(request):
     return render(request, 'detail.html', {
         'transactions': transactions_data, 
         'categories_json': categories_data,
-        'categories': categories # Keep original categories for modal selection
+        # 'categories': categories # Keep original categories for modal selection
     })
 
 @csrf_exempt
@@ -112,6 +112,49 @@ def delete_transaction_view(request):
         logger = logging.getLogger(__name__)
         logger.info('Transaction deleted')
 
+        return JsonResponse({'status': 'success'})
+    except Transaction.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Transaction not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    
+@csrf_exempt
+@require_POST
+def update_transaction_view(request):
+    try:
+        transaction_id = request.POST.get('transaction_id')
+        date = request.POST.get('date')
+        category_name = request.POST.get('category')
+        transaction_type = request.POST.get('transaction_type') == 'true'
+        amount = request.POST.get('amount')
+        description = request.POST.get('description')
+        currency_code = request.POST.get('currency')
+        
+        if not transaction_id:
+            return JsonResponse({'status': 'error', 'message': 'Transaction ID is required'}, status=400)
+            
+        transaction = Transaction.objects.get(id=transaction_id)
+        
+        # 更新類別（如果有變更）
+        if category_name and transaction.category.name != category_name:
+            category = Category.objects.get(name=category_name)
+            transaction.category = category
+            
+        # 更新其他欄位
+        if date:
+            transaction.date = date
+        transaction.transaction_type = transaction_type
+        if amount:
+            transaction.amount = amount
+        if description:
+            transaction.description = description
+        if currency_code:
+            from finance.models import Currency  # 假設有Currency模型
+            currency = Currency.objects.get(currency_code=currency_code)
+            transaction.currency = currency
+            
+        transaction.save()
+        
         return JsonResponse({'status': 'success'})
     except Transaction.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'Transaction not found'}, status=404)
@@ -159,11 +202,11 @@ def management_view(request):
     }
     
     return render(request, 'management.html', {
-        'income_categories': income_categories,
-        'expense_categories': expense_categories,
+        # 'income_categories': income_categories,
+        # 'expense_categories': expense_categories,
         'categories_json': json.dumps(categories_data),
-        'income_categories_list': json.dumps(income_categories_list),
-        'expense_categories_list': json.dumps(expense_categories_list)
+        # 'income_categories_list': json.dumps(income_categories_list),
+        # 'expense_categories_list': json.dumps(expense_categories_list)
     })
 
 @csrf_exempt
@@ -184,3 +227,26 @@ def add_category(request):
         return JsonResponse({'status': 'exists', 'message': 'Category already exists'})
 
     return JsonResponse({'status': 'success', 'name': category.name})
+
+@csrf_exempt
+def delete_category_view(request):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
+    
+    try:
+        category_id = request.POST.get('category_id')
+
+        if not category_id:
+            return JsonResponse({'status': 'error', 'message': 'Category ID is required'}, status=400)
+
+        Category.objects.get(id=category_id).delete()
+
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info('Category deleted')
+
+        return JsonResponse({'status': 'success'})
+    except Transaction.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Category not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)

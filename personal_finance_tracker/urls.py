@@ -30,4 +30,6 @@ urlpatterns = [
     path('management/', views.management_view, name='management'),
     path('delete-transaction/', delete_transaction_view, name='delete_transaction'),
     path('add-category/', add_category, name='add_category'),
+    path('delete-category/', views.delete_category_view, name='delete_category'),
+    path('update-transaction/', views.update_transaction_view, name='update_transaction'),
 ]
