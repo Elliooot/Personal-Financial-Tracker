@@ -94,25 +94,15 @@
               <input type="date" class="form-control" id="editDate" required>
             </div>
             <div class="mb-3">
-              <label for="editCategory" class="form-label">Category</label>
-              <select class="form-select" id="editCategory">
-                <option value="Food">Food</option>
-                <option value="Shopping">Shopping</option>
-                <option value="Transportation">Transportation</option>
-                <option value="Education">Education</option>
-                <option value="Entertainment">Entertainment</option>
-                <option value="Housing">Housing</option>
-                <option value="Medical">Medical</option>
-                <option value="Investment">Investment</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-            <div class="mb-3">
               <label for="editType" class="form-label">Type</label>
               <select class="form-select" id="editType">
                 <option value="true">Income</option>
                 <option value="false">Expense</option>
               </select>
+            </div>
+            <div class="mb-3">
+              <label for="editCategory" class="form-label">Category</label>
+              <select class="form-select" id="editCategory"></select>
             </div>
             <div class="mb-3">
               <label for="editCurrency" class="form-label">Currency</label>
@@ -155,25 +145,15 @@
               <input type="date" class="form-control" id="addDate" required>
             </div>
             <div class="mb-3">
-              <label for="addCategory" class="form-label">Category</label>
-              <select class="form-select" id="addCategory" required>
-                <option value="Food">Food</option>
-                <option value="Shopping">Shopping</option>
-                <option value="Transportation">Transportation</option>
-                <option value="Education">Education</option>
-                <option value="Entertainment">Entertainment</option>
-                <option value="Housing">Housing</option>
-                <option value="Medical">Medical</option>
-                <option value="Investment">Investment</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-            <div class="mb-3">
               <label for="addType" class="form-label">Type</label>
               <select class="form-select" id="addType">
                 <option value="true">Income</option>
                 <option value="false">Expense</option>
               </select>
+            </div>
+            <div class="mb-3">
+              <label for="addCategory" class="form-label">Category</label>
+              <select class="form-select" id="addCategory" required></select>
             </div>
             <div class="mb-3">
               <label for="addCurrency" class="form-label">Currency</label>
@@ -233,23 +213,23 @@
     </div>
   </div>
   
-  <!-- Add Outcome Category Modal -->
-  <div class="modal fade" id="addOutcomeCategoryModal" tabindex="-1" aria-labelledby="addOutcomeCategoryModalLabel" aria-hidden="true">
+  <!-- Add Expense Category Modal -->
+  <div class="modal fade" id="addExpenseCategoryModal" tabindex="-1" aria-labelledby="addExpenseCategoryModalLabel" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="addOutcomeCategoryModalLabel">Add Outcome Category</h5>
+          <h5 class="modal-title" id="addExpenseCategoryModalLabel">Add Expense Category</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <form id="addOutcomeCategoryForm">
+          <form id="addExpenseCategoryForm">
             <div class="mb-3">
-              <label for="outcomeCategoryName" class="form-label">Name</label>
-              <input type="text" class="form-control" id="outcomeCategoryName" required>
+              <label for="expenseCategoryName" class="form-label">Name</label>
+              <input type="text" class="form-control" id="expenseCategoryName" required>
             </div>
             <div class="mb-3">
-              <label for="outcomeCategoryType" class="form-label">Type</label>
-              <input type="text" class="form-control" id="outcomeCategoryType" value="Outcome" readonly>
+              <label for="expenseCategoryType" class="form-label">Type</label>
+              <input type="text" class="form-control" id="expenseCategoryType" value="Expense" readonly>
             </div>
           </form>
         </div>
@@ -276,8 +256,12 @@
               <input type="month" class="form-control" id="budgetYearMonth" required>
             </div>
             <div class="mb-3">
+              <label for="addCategory" class="form-label">Category</label>
+              <select class="form-select" id="budgetCategory" required></select>
+            </div>
+            <div class="mb-3">
               <label for="budgetAmount" class="form-label">Budget Amount</label>
-              <input type="number" class="form-control" id="budgetAmount" required>
+              <input type="text" class="form-control" id="budgetAmount" required>
             </div>
           </form>
         </div>
@@ -285,6 +269,29 @@
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
           <button type="button" class="btn btn-primary" id="saveBudget">Save</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Currency Modal -->
+  <div class="modal fade" id="addCurrencyModal" tabindex="-1" aria-labelledby="addCurrencyModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addCurrencyModalLabel">Add Currency</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="addBudgetForm">
+            <div class="mb-3">
+              <label for="currency" class="form-label">Currency</label>
+              <input type="text" class="form-control" id="currency" required>
+            </div>
+          </form>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-primary" id="saveCurrency">Save</button>
+          </div>
       </div>
     </div>
   </div>
@@ -413,6 +420,12 @@
       });
     }
 
+    function openAddModal() {
+        const addModal = new bootstrap.Modal(document.getElementById('addModal'));
+        addModal.show();
+        updateCategoryDropdown(); // Update drop-down box
+    }
+
     function openEditModal(index) {
       const transaction = window.transactions[index];
       if (!transaction) {
@@ -481,8 +494,34 @@
       console.log(window.categories);
     }
 
+    function updateBudgetCategoryDropdown() {
+      const categoryDropdown = document.getElementById('budgetCategory');
+      if (!categoryDropdown) return;
+
+      categoryDropdown.innerHTML = '';
+
+      // 只顯示支出類別，因為預算通常用於支出
+      if (!window.categories || !window.categories['false']) {
+        console.error('Expense categories not defined');
+        return;
+      }
+
+      // 添加一個預設選項
+      const defaultOption = document.createElement('option');
+      defaultOption.value = '';
+      defaultOption.textContent = '-- Select Category --';
+      categoryDropdown.appendChild(defaultOption);
+
+      // 添加所有支出類別
+      window.categories['false'].forEach(category => {
+        const option = document.createElement('option');
+        option.value = typeof category === 'object' ? category.id : category;
+        option.textContent = typeof category === 'object' ? category.name : category;
+        categoryDropdown.appendChild(option);
+      });
+    }
+
     // TODO: edit db
-    // Delete transaction from fronend and in database
     function deleteTransaction(index) {
       const transactionId = transactions[index].id;
       console.log('Deleting transaction:', transactionId);
@@ -607,42 +646,61 @@
     }
 
     function updateManagementTables() {
-      const incomeTable = document.getElementById('income-categories-table');
-      const outcomeTable = document.getElementById('outcome-categories-table');
-      
-      if (!incomeTable || !outcomeTable) return;
-      
-      if (!window.categories) {
-        console.error('Categories not defined');
-        return;
-      }
-      
-      // Update Income Categories table
-      incomeTable.innerHTML = (window.categories['true'] || []).map(category => `
+  const incomeTable = document.getElementById('income-categories-table');
+  const expenseTable = document.getElementById('expense-categories-table');
+  
+  if (!incomeTable || !expenseTable) {
+    console.log('Category tables not found, skipping update');
+    return;
+  }
+  
+  if (!window.categories) {
+    console.error('Categories not defined');
+    return;
+  }
+  
+  console.log('Updating management tables with:', window.categories);
+  
+  // 更新收入類別表格
+  if (Array.isArray(window.categories.true)) {
+    incomeTable.innerHTML = window.categories.true.length > 0 ?
+      window.categories.true.map(cat => `
         <tr>
-          <td>${category}</td>
-          <td>Income</td>
-          <td><button class='btn btn-danger btn-sm' onclick="deleteCategory('true', '${category}')">Delete</button></td>
+          <td>${cat.name}</td>
+          <td>${cat.transaction_count}</td>
+          <td>£${cat.total_amount}</td>
+          <td>
+            <button class='btn btn-danger btn-sm' onclick="deleteCategory('true', '${cat.id}')">Delete</button>
+          </td>
         </tr>
-      `).join('');
-
-      // Update Outcome Categories table
-      outcomeTable.innerHTML = (window.categories['false'] || []).map(category => `
+      `).join('') :
+      '<tr><td colspan="4" class="text-center">No income categories available</td></tr>';
+  }
+  
+  // 更新支出類別表格
+  if (Array.isArray(window.categories.false)) {
+    expenseTable.innerHTML = window.categories.false.length > 0 ?
+      window.categories.false.map(cat => `
         <tr>
-          <td>${category}</td>
-          <td>Outcome</td>
-          <td><button class='btn btn-danger btn-sm' onclick="deleteCategory('false', '${category}')">Delete</button></td>
+          <td>${cat.name}</td>
+          <td>${cat.transaction_count}</td>
+          <td>£${cat.total_amount}</td>
+          <td>
+            <button class='btn btn-danger btn-sm' onclick="deleteCategory('false', '${cat.id}')">Delete</button>
+          </td>
         </tr>
-      `).join('');
-    }
+      `).join('') :
+      '<tr><td colspan="4" class="text-center">No expense categories available</td></tr>';
+  }
+}
       
     // 全局变量：存储 budgets
     let budgets = [];
 
-    // 打开新增弹窗
     function openAddBudgetModal() {
       document.getElementById('budgetYearMonth').value = '';
       document.getElementById('budgetAmount').value = '';
+      updateBudgetCategoryDropdown();
       const addBudgetModal = new bootstrap.Modal(document.getElementById('addBudgetModal'));
       addBudgetModal.show();
     }
@@ -651,19 +709,37 @@
     document.getElementById('saveBudget').addEventListener('click', () => {
       const yearMonth = document.getElementById('budgetYearMonth').value;
       const amount = document.getElementById('budgetAmount').value;
+      const categoryEl = document.getElementById('budgetCategory');
 
-      if (yearMonth && amount) {
-        const newBudget = {
-          id: Date.now(), // 使用时间戳作为唯一 ID
-          yearMonth: yearMonth,
-          amount: parseFloat(amount),
-          remainingAmount: parseFloat(amount) // 初始剩余额度等于预算金额
-        };
-        budgets.push(newBudget);
-        updateBudgetTable(); // 更新表格
-        const addBudgetModal = bootstrap.Modal.getInstance(document.getElementById('addBudgetModal'));
-        addBudgetModal.hide();
+      if (!yearMonth) {
+        alert('Please select a year-month');
+        return;
       }
+      
+      if (!amount || isNaN(parseFloat(amount))) {
+        alert('Please enter a valid amount');
+        return;
+      }
+      
+      if (!categoryEl.value) {
+        alert('Please select a category');
+        return;
+      }
+      
+      const categoryName = categoryEl.options[categoryEl.selectedIndex].textContent;
+      
+      const newBudget = {
+        id: Date.now(),
+        yearMonth: yearMonth,
+        category: categoryName,
+        amount: parseFloat(amount),
+        remainingAmount: parseFloat(amount)
+      };
+      
+      budgets.push(newBudget);
+      updateBudgetTable();
+      const addBudgetModal = bootstrap.Modal.getInstance(document.getElementById('addBudgetModal'));
+      addBudgetModal.hide();
     });
 
     // 删除 budget
@@ -679,6 +755,7 @@
       tableBody.innerHTML = budgets.map(budget => `
         <tr>
           <td>${budget.yearMonth}</td>
+          <td>${budget.category || 'All Categories'}</td>
           <td>£${budget.amount.toFixed(2)}</td>
           <td>£${budget.remainingAmount.toFixed(2)}</td>
           <td>
@@ -713,6 +790,12 @@
       updateBudgetTable(); // 更新表格
     }
 
+    function openAddCurrencyModal() {
+      const addCurrencyModal = new bootstrap.Modal(document.getElementById('addCurrencyModal'));
+      addCurrencyModal.show();
+    }
+      
+
     // 在 DOMContentLoaded 事件內添加這些
     document.getElementById('addType').addEventListener('change', function() {
       updateCategoryDropdown();
@@ -727,7 +810,6 @@
       calculateRemainingBudget();
     });
 
-    // 删除类别
     function deleteCategory(type, category) {
       window.categories[type] = categories[type].filter(c => c !== category);
       updateManagementTables();
@@ -740,83 +822,107 @@
       addIncomeCategoryModal.show();
     }
 
-    function openAddOutcomeCategoryModal() {
-      document.getElementById('outcomeCategoryName').value = ''; // Clear the input box
-      const addOutcomeCategoryModal = new bootstrap.Modal(document.getElementById('addOutcomeCategoryModal'));
-      addOutcomeCategoryModal.show();
+    function openAddExpenseCategoryModal() {
+      document.getElementById('expenseCategoryName').value = ''; // Clear the input box
+      const addExpenseCategoryModal = new bootstrap.Modal(document.getElementById('addExpenseCategoryModal'));
+      addExpenseCategoryModal.show();
     }
 
     document.getElementById('saveIncomeCategory').addEventListener('click', () => {
       const categoryName = document.getElementById('incomeCategoryName').value;
 
       if (categoryName && !window.categories['true'].includes(categoryName)) {
-        window.categories['true'].push(categoryName);
-        updateManagementTables();
-        updateCategoryDropdown();
-        const addIncomeCategoryModal = bootstrap.Modal.getInstance(document.getElementById('addIncomeCategoryModal'));
-        addIncomeCategoryModal.hide();
+        fetch("{% url 'add_category' %}", {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            'name': categoryName,
+            'is_income': 'true'
+          })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === 'success') {
+            window.categories['true'].push(data.name);
+            updateManagementTables();
+            updateCategoryDropdown();
+          } else if(data.status === 'exists'){
+              alert("Category already exists");          
+          }else {
+            alert(data.message);
+          }
+          const modal = bootstrap.Modal.getInstance(document.getElementById('addIncomeCategoryModal'));
+          modal.hide();
+        })
+        .catch(error => {
+          alert('Error when adding income category');
+        });
       }else{
-        alert('Error when adding income category');
+        alert('Please enter a valid or non-duplicate category name!');
       }
     });
 
     document.getElementById('saveExpenseCategory').addEventListener('click', () => {
-      const categoryName = document.getElementById('outcomeCategoryName').value;
+      const categoryName = document.getElementById('expenseCategoryName').value;
       if (categoryName && !window.categories['false'].includes(categoryName)) {
         window.categories['false'].push(categoryName);
         updateManagementTables();
         updateCategoryDropdown();
-        const addOutcomeCategoryModal = bootstrap.Modal.getInstance(document.getElementById('addOutcomeCategoryModal'));
-        addOutcomeCategoryModal.hide();
+        const addExpenseCategoryModal = bootstrap.Modal.getInstance(document.getElementById('addExpenseCategoryModal'));
+        addExpenseCategoryModal.hide();
       }
     });
 
     // Initialize data
     function initializeData() {
-      // Initialize transactions data
-      const transactionsDataElement = document.getElementById('transactions-data');
-      if (transactionsDataElement) {
-        try {
-          window.transactions = JSON.parse(transactionsDataElement.textContent);
-        } catch (e) {
-          console.error('Failed to parse transactions data:', e);
-          window.transactions = [];
-        }
-      }
-      
-      // Initialize categories data
-      const categoriesDataElement = document.getElementById('categories-data');
-      if (categoriesDataElement) {
-        try {
-          window.categories = JSON.parse(categoriesDataElement.textContent);
-          console.log('Successfully parsed categories:', window.categories);
-        } catch (e) {
-          console.error('Failed to parse categories data:', e);
-          window.categories = {'true': [], 'false': []};
-        }
-      } else {
-        console.warn('Categories data element not found, initializing empty categories');
+  // 初始化交易數據
+  const transactionsDataElement = document.getElementById('transactions_data');
+  if (transactionsDataElement) {
+    try {
+      window.transactions = JSON.parse(transactionsDataElement.textContent);
+    } catch (e) {
+      console.error('Failed to parse transactions data:', e);
+      window.transactions = [];
+    }
+  }
+  
+  // 只有在尚未設置 window.categories 時才初始化類別數據
+  if (!window.categories) {
+    const categoriesDataElement = document.getElementById('categories_data');
+    if (categoriesDataElement) {
+      try {
+        window.categories = JSON.parse(categoriesDataElement.textContent);
+        console.log('Successfully parsed categories:', window.categories);
+      } catch (e) {
+        console.error('Failed to parse categories data:', e);
         window.categories = {'true': [], 'false': []};
       }
-      
-      // Check if categories are correctly initialized
-      if (!window.categories) {
-        console.warn('Categories still not defined after initialization, creating empty object');
-        window.categories = {};
-      }
-      
-      if (!window.categories['true']) {
-        console.warn('true category array not found, initializing empty array');
-        window.categories['true'] = [];
-      }
-      
-      if (!window.categories['false']) {
-        console.warn('false category array not found, initializing empty array');
-        window.categories['false'] = [];
-      }
-      
-      console.log('Final categories structure:', window.categories);
+    } else {
+      console.warn('Categories data element not found, initializing empty categories');
+      window.categories = {'true': [], 'false': []};
     }
+  }
+  
+  // 確保類別結構完整
+  if (!window.categories) {
+    console.warn('Categories still not defined after initialization, creating empty object');
+    window.categories = {};
+  }
+  
+  if (!window.categories['true']) {
+    console.warn('true category array not found, initializing empty array');
+    window.categories['true'] = [];
+  }
+  
+  if (!window.categories['false']) {
+    console.warn('false category array not found, initializing empty array');
+    window.categories['false'] = [];
+  }
+  
+  console.log('Final categories structure:', window.categories);
+}
 
     document.addEventListener("DOMContentLoaded", () => {
       initializeData();

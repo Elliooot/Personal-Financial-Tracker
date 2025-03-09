@@ -157,12 +157,12 @@
 {% endblock %}
 
 {% block page_scripts %}
-  {{ transactions|default:"[]"|json_script:"transactions-data" }}
-  {{ categories_json|default:"{}"|json_script:"categories-data" }}
+  {{ transactions|default:"[]"|json_script:"transactions_data" }}
+  {{ categories_json|default:"{}"|json_script:"categories_data" }}
 {% endblock %}
 
 <!-- <script>
-  const transactionsDataElement = document.getElementById('transactions-data');
+  const transactionsDataElement = document.getElementById('transactions_data');
   let transactionsRaw = transactionsDataElement ? transactionsDataElement.textContent : '[]';
   try {
     window.transactions = JSON.parse(transactionsRaw);
@@ -171,7 +171,7 @@
     window.transactions = [];
   }
 
-  const categoriesDataElement = document.getElementById('categories-data');
+  const categoriesDataElement = document.getElementById('categories_data');
   let categoriesRaw = categoriesDataElement ? categoriesDataElement.textContent : '{}';
   try {
     window.categories = JSON.parse(categoriesRaw);
