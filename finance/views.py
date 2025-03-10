@@ -6,7 +6,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Count, Sum
 from rich import _console
 from finance.forms import CategoryForm, TransactionForm
-from finance.models import User, Category, Transaction
+from finance.models import User, Account, Category, Transaction, Currency
 from django.contrib import messages
 from django.contrib.auth import authenticate, login as auth_login, logout
 from django.contrib.auth.hashers import make_password
@@ -77,7 +77,8 @@ def detail_view(request):
             'amount': str(t.amount),
             'description': t.description,
             'transaction_type': t.transaction_type,
-            'currency': t.currency.currency_code
+            'currency': t.currency.currency_code,
+            'account': t.account.account_name
         } for t in transactions
     ]
 
@@ -85,8 +86,8 @@ def detail_view(request):
     expense_categories = [c.name for c in categories if not c.is_income]
     
     categories_data = {
-        'true': income_categories,  # income
-        'false': expense_categories  # Expense
+        'true': income_categories,
+        'false': expense_categories 
     }
 
     return render(request, 'detail.html', {
@@ -94,6 +95,51 @@ def detail_view(request):
         'categories_json': categories_data,
         # 'categories': categories # Keep original categories for modal selection
     })
+
+@csrf_exempt
+@require_POST
+def add_transaction_view(request):
+    try:
+        date = request.POST.get('date')
+        category_name = request.POST.get('category')
+        transaction_type = request.POST.get('transaction_type') == 'true'
+        amount = request.POST.get('amount')
+        description = request.POST.get('description')
+        currency_code = request.POST.get('currency')
+        account_name = request.POST.get('account')
+
+        # Verify required fields
+        if not date or not category_name or not amount or not account_name:
+            return JsonResponse({'status': 'error', 'message': 'Date, category, amount and account are required'}, status=400)
+
+        category, _ = Category.objects.get_or_create(name=category_name)
+
+        account_obj, _ = Account.objects.get_or_create(
+            user=request.user,
+            account_name=account_name,
+            defaults={'balance': '0.00'}
+        )
+
+        currency, _ = Currency.objects.get_or_create(
+            currency_code=currency_code,
+            defaults={'exchange_rate': '1.00'}
+        )
+
+        transaction = Transaction.objects.create(
+            user=request.user,
+            account=account_obj,
+            date=date,
+            category=category,
+            transaction_type=transaction_type,
+            amount=amount,
+            description=description,
+            currency=currency
+        )
+
+        return JsonResponse({'status': 'success', 'transaction_id': transaction.id})
+
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 @csrf_exempt
 def delete_transaction_view(request):
@@ -122,25 +168,44 @@ def delete_transaction_view(request):
 @require_POST
 def update_transaction_view(request):
     try:
-        transaction_id = request.POST.get('transaction_id')
+        transaction_id = request.POST.get('id')
+        if not transaction_id:
+            return JsonResponse({'status': 'error', 'message': 'Transaction ID required'}, status=400)
+
+        transaction = Transaction.objects.get(id=transaction_id)
+
+        # Get POST data
         date = request.POST.get('date')
         category_name = request.POST.get('category')
         transaction_type = request.POST.get('transaction_type') == 'true'
         amount = request.POST.get('amount')
         description = request.POST.get('description')
         currency_code = request.POST.get('currency')
-        
-        if not transaction_id:
-            return JsonResponse({'status': 'error', 'message': 'Transaction ID is required'}, status=400)
-            
-        transaction = Transaction.objects.get(id=transaction_id)
-        
-        # 更新類別（如果有變更）
-        if category_name and transaction.category.name != category_name:
-            category = Category.objects.get(name=category_name)
+        account_name = request.POST.get('account')
+
+        # Handle category
+        if category_name:
+            category, _ = Category.objects.get_or_create(name=category_name)
             transaction.category = category
-            
-        # 更新其他欄位
+
+        # Handle currency (ForeignKey)
+        if currency_code:
+            currency, _ = Currency.objects.get_or_create(
+                currency_code=currency_code,
+                defaults={'exchange_rate': '1.00'}
+            )
+            transaction.currency = currency
+
+        # Handle account
+        if account_name:
+            account_obj, _ = Account.objects.get_or_create(
+                user=request.user,
+                account_name=account_name,
+                defaults={'balance': '0.00'}
+            )
+            transaction.account = account_obj
+
+        # Update other fields
         if date:
             transaction.date = date
         transaction.transaction_type = transaction_type
@@ -148,18 +213,16 @@ def update_transaction_view(request):
             transaction.amount = amount
         if description:
             transaction.description = description
-        if currency_code:
-            from finance.models import Currency  # 假設有Currency模型
-            currency = Currency.objects.get(currency_code=currency_code)
-            transaction.currency = currency
-            
+
         transaction.save()
-        
-        return JsonResponse({'status': 'success'})
+
+        return JsonResponse({'status': 'success', 'transaction_id': transaction.id})
+
     except Transaction.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'Transaction not found'}, status=404)
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
     
 def statistics_view(request):
 

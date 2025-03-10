@@ -28,8 +28,9 @@ urlpatterns = [
     path('detail/', views.detail_view, name='detail'),
     path('statistics/', views.statistics_view, name='statistics'),
     path('management/', views.management_view, name='management'),
+    path('add-transaction/', views.add_transaction_view, name='add_transaction'),
     path('delete-transaction/', delete_transaction_view, name='delete_transaction'),
+    path('update-transaction/', views.update_transaction_view, name='update_transaction'),
     path('add-category/', add_category, name='add_category'),
     path('delete-category/', views.delete_category_view, name='delete_category'),
-    path('update-transaction/', views.update_transaction_view, name='update_transaction'),
 ]

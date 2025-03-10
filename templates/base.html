@@ -4,6 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="add-transaction-url" content="{% url 'add_transaction' %}">
   <meta name="delete-transaction-url" content="{% url 'delete_transaction' %}">
   <meta name="update-transaction-url" content="{% url 'update_transaction' %}">
   <meta name="delete-category-url" content="{% url 'delete_category' %}">
@@ -119,6 +120,15 @@
               <input type="text" class="form-control" id="editAmount" required>
             </div>
             <div class="mb-3">
+              <label for="editAccount" class="form-label">Account</label>
+              <select class="form-select" id="editAccount">
+                <option value="cash">Cash</option>
+                <option value="bank">Bank Account</option>
+                <option value="credit_card">Credit Card</option>
+                <option value="debit_card">Debit Card</option>
+              </select>
+            </div>
+            <div class="mb-3">
               <label for="editDescription" class="form-label">Description</label>
               <input type="text" class="form-control" id="editDescription">
             </div>
@@ -170,6 +180,15 @@
               <input type="text" class="form-control" id="addAmount" required>
             </div>
             <div class="mb-3">
+              <label for="addAccount" class="form-label">Account</label>
+              <select class="form-select" id="addAccount">
+                <option value="cash">Cash</option>
+                <option value="bank">Bank Account</option>
+                <option value="credit_card">Credit Card</option>
+                <option value="debit_card">Debit Card</option>
+              </select>
+            </div>
+            <div class="mb-3">
               <label for="addDescription" class="form-label">Description</label>
               <input type="text" class="form-control" id="addDescription">
             </div>
@@ -197,14 +216,6 @@
               <label for="incomeCategoryName" class="form-label">Name</label>
               <input type="text" class="form-control" id="incomeCategoryName" required>
             </div>
-            <div class="mb-3">
-              <label for="incomeCategoryType" class="form-label">Type</label>
-              <select class="form-select" id="addType">
-                <option value="true">Income</option>
-                <option value="false">Expense</option>
-              </select>
-              <!-- <input type="text" class="form-control" id="incomeCategoryType" value="Income" readonly> -->
-            </div>
           </form>
         </div>
         <div class="modal-footer">
@@ -228,10 +239,6 @@
             <div class="mb-3">
               <label for="expenseCategoryName" class="form-label">Name</label>
               <input type="text" class="form-control" id="expenseCategoryName" required>
-            </div>
-            <div class="mb-3">
-              <label for="expenseCategoryType" class="form-label">Type</label>
-              <input type="text" class="form-control" id="expenseCategoryType" value="Expense" readonly>
             </div>
           </form>
         </div>
@@ -284,7 +291,7 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <form id="addBudgetForm">
+          <form id="addCurrencyForm">
             <div class="mb-3">
               <label for="currency" class="form-label">Currency</label>
               <input type="text" class="form-control" id="currency" required>
@@ -293,6 +300,42 @@
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             <button type="button" class="btn btn-primary" id="saveCurrency">Save</button>
+          </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Account Modal -->
+  <div class="modal fade" id="addAccountModal" tabindex="-1" aria-labelledby="addAccountModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addAccountModalLabel">Add Account</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="addAccountForm">
+            <div class="mb-3">
+              <label for="account" class="form-label">Account Name</label>
+              <input type="text" class="form-control" id="account" required>
+            </div>
+            <div class="mb-3">
+              <label for="addAccount" class="form-label">Account</label>
+              <select class="form-select" id="addAccount">
+                <option value="cash">Cash</option>
+                <option value="bank">Bank Account</option>
+                <option value="credit_card">Credit Card</option>
+                <option value="debit_card">Debit Card</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="balance" class="form-label">Balance</label>
+              <input type="text" class="form-control" id="balance" required>
+            </div>
+          </form>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-primary" id="saveAccount">Save</button>
           </div>
       </div>
     </div>
@@ -397,6 +440,7 @@
             <td>${t.transaction_type ? "Income" : "Expense"}</td>
             <td>${t.currency}</td>
             <td>${t.amount}</td>
+            <td>${t.account}</td>
             <td>${t.description}</td>
             <td>
                 <button class='btn btn-success btn-sm' onclick="saveTransaction(${index})">Save</button>
@@ -407,18 +451,6 @@
             </td>
         </tr>`).join('');
         document.getElementById(tableId).innerHTML = tableContent || '<tr><td colspan="8" class="text-center">No data available</td></tr>';
-    }
-    
-    // TODO: sort from db then render to frontend
-    function sortTransactionsByDate(transactions, order = 'desc') {
-      if(!transactions ||!Array.isArray(transactions)) return [];
-
-      return [...transactions].sort((a, b) => {
-        const dateA = new Date(a.date);
-        const dateB = new Date(b.date);
-        
-        return order === 'desc' ? dateB - dateA : dateA - dateB;
-      });
     }
 
     function openAddModal() {
@@ -446,6 +478,7 @@
 
       document.getElementById('editCurrency').value = transaction.currency;
       document.getElementById('editAmount').value = transaction.amount;
+      document.getElementById('editAccount').value = transaction.account_name;
       document.getElementById('editDescription').value = transaction.description;
 
       const editModal = new bootstrap.Modal(document.getElementById('editModal'));
@@ -522,7 +555,6 @@
       });
     }
 
-    // TODO: edit db
     function deleteTransaction(index) {
       const transactionId = transactions[index].id;
       console.log('Deleting transaction:', transactionId);
@@ -584,6 +616,7 @@
           transaction_type: document.getElementById('editType').value === 'true',
           currency: document.getElementById('editCurrency').value,
           amount: document.getElementById('editAmount').value,
+          account: document.getElementById('editAccount').value,
           description: document.getElementById('editDescription').value
         };
         
@@ -599,12 +632,13 @@
             'Content-Type': 'application/x-www-form-urlencoded',
           },
           body: new URLSearchParams({
-            'transaction_id': transactionId,
+            'id': window.transactions[currentEditIndex].id,
             'date': updatedTransaction.date,
             'category': updatedTransaction.category,
             'transaction_type': updatedTransaction.transaction_type,
             'currency': updatedTransaction.currency,
             'amount': updatedTransaction.amount,
+            'account': updatedTransaction.account,
             'description': updatedTransaction.description
           })
         })
@@ -638,37 +672,57 @@
     });
 
     document.getElementById('addTransaction').addEventListener('click', () => {
-      const addDateEl = document.getElementById('addDate');
-      const addCategoryEl = document.getElementById('addCategory');
-      const addAmountEl = document.getElementById('addAmount');
-
-      if(!addDateEl){
-        alert('Please enter a valid date');
-        addDateEl.focus();
-        return;
-      }
-      if(!addCategoryEl){
-        alert('Please select a category');
-        addCategoryEl.focus();
-        return;
-      }
-      if(!addAmountEl || isNaN(parseFloat(addAmountEl.value))){
-        alert('Please enter a valid amount');
-        addAmountEl.focus();
-        return;
-      }
-      
       const newTransaction = {
         date: document.getElementById('addDate').value,
         category: document.getElementById('addCategory').value,
         transaction_type: document.getElementById('addType').value === 'true',
         currency: document.getElementById('addCurrency').value,
         amount: document.getElementById('addAmount').value,
+        account: document.getElementById('addAccount').value,
         description: document.getElementById('addDescription').value
-      };
-      transactions.push(newTransaction);
+      }
 
-      refreshTables();
+      let addUrl = 'add-transaction/';
+      const addUrlMeta = document.querySelector('meta[name="add-transaction-url"]');
+      if (addUrlMeta) {
+        addUrl = addUrlMeta.getAttribute('content');
+      }
+      
+      fetch('/add-transaction/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          'date': newTransaction.date,
+          'category': newTransaction.category,
+          'transaction_type': newTransaction.transaction_type,
+          'currency': newTransaction.currency,
+          'amount': newTransaction.amount,
+          'account': newTransaction.account,
+          'description': newTransaction.description
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          newTransaction.id = data.id || Date.now();
+          transactions.push(newTransaction);
+          refreshTables();
+          calculateRemainingBudget();
+
+          window.location.reload();
+        } else {
+          console.error('Failed to add:', data.message);
+          alert(`Failed to add: ${data.message}`);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while adding the transaction');
+      });
+
+      // document.getElementById('addTransaction').blur();
       const addModal = bootstrap.Modal.getInstance(document.getElementById('addModal'));
       addModal.hide();
     });
@@ -839,6 +893,11 @@
       const addCurrencyModal = new bootstrap.Modal(document.getElementById('addCurrencyModal'));
       addCurrencyModal.show();
     }
+
+    function openAddAccountModal() {
+      const addAccountModal = new bootstrap.Modal(document.getElementById('addAccountModal'));
+      addAccountModal.show();
+    }
       
 
     // 在 DOMContentLoaded 事件內添加這些
@@ -848,11 +907,6 @@
 
     document.getElementById('editType').addEventListener('change', function() {
       updateEditCategoryDropdown(this.value);
-    });
-
-    // 在每次新增 transaction 时调用 calculateRemainingBudget
-    document.getElementById('addTransaction').addEventListener('click', () => {
-      calculateRemainingBudget();
     });
 
     function deleteCategory(type, categoryId) {
