@@ -31,6 +31,10 @@ urlpatterns = [
     path('add-transaction/', views.add_transaction_view, name='add_transaction'),
     path('delete-transaction/', delete_transaction_view, name='delete_transaction'),
     path('update-transaction/', views.update_transaction_view, name='update_transaction'),
-    path('add-category/', add_category, name='add_category'),
+    path('add-category/', views.add_category, name='add_category'),
     path('delete-category/', views.delete_category_view, name='delete_category'),
+    path('add-budget/', views.add_budget_view, name='add_budget'),
+    path('update-budget/', views.update_budget_view, name='update_budget'),
+    path('delete-budget/', views.delete_budget_view, name='delete_budget'),
+    path('get-budgets/', views.get_budgets_view, name='get_budgets'),
 ]

@@ -6,7 +6,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Count, Sum
 from rich import _console
 from finance.forms import CategoryForm, TransactionForm
-from finance.models import User, Account, Category, Transaction, Currency
+from finance.models import User, Account, Category, Transaction, Currency, Budget
 from django.contrib import messages
 from django.contrib.auth import authenticate, login as auth_login, logout
 from django.contrib.auth.hashers import make_password
@@ -289,7 +289,7 @@ def add_category(request):
     if not created:
         return JsonResponse({'status': 'exists', 'message': 'Category already exists'})
 
-    return JsonResponse({'status': 'success', 'name': category.name})
+    return JsonResponse({'status': 'success', 'id': category.id, 'name': category.name})
 
 @csrf_exempt
 def delete_category_view(request):
@@ -302,14 +302,163 @@ def delete_category_view(request):
         if not category_id:
             return JsonResponse({'status': 'error', 'message': 'Category ID is required'}, status=400)
 
-        Category.objects.get(id=category_id).delete()
+        try:
+            category = Category.objects.get(id=category_id)
+        except Category.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Category not found'}, status=404)
+        
+        # 檢查是否有交易使用此類別
+        if category.transaction_set.exists():
+            return JsonResponse({
+                'status': 'error', 
+                'message': '無法刪除：有交易使用此類別。請先刪除或重新分類這些交易。'
+            }, status=400)
+        
+        # 刪除類別
+        category.delete()
 
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.info('Category deleted')
-
-        return JsonResponse({'status': 'success'})
-    except Transaction.DoesNotExist:
+        return JsonResponse({'status': 'success', 'message': '類別已成功刪除'})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    
+@csrf_exempt
+@require_POST
+def add_budget_view(request):
+    try:
+        period = request.POST.get('period')
+        category_id = request.POST.get('category_id')
+        budget_amount = request.POST.get('budget_amount')
+        
+        if not period or not category_id or not budget_amount:
+            return JsonResponse({'status': 'error', 'message': 'All fields are required'}, status=400)
+        
+        # Convert year and month strings to date objects (using the first day of the month)
+        from datetime import datetime
+        period_date = datetime.strptime(period + "-01", "%Y-%m-%d").date()
+        
+        category = Category.objects.get(id=category_id)
+        
+        budget, created = Budget.objects.update_or_create(
+            user=request.user,
+            category=category,
+            period=period_date,
+            defaults={'budget_amount': budget_amount}
+        )
+        
+        return JsonResponse({
+            'status': 'success', 
+            'id': budget.id,
+            'message': 'Budget added successfully'
+        })
+        
+    except Category.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'Category not found'}, status=404)
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+@login_required
+@csrf_exempt
+@require_POST
+def update_budget_view(request):
+    try:
+        budget_id = request.POST.get('budget_id')
+        period = request.POST.get('period')
+        category_id = request.POST.get('category_id')
+        budget_amount = request.POST.get('budget_amount')
+        
+        if not budget_id:
+            return JsonResponse({'status': 'error', 'message': 'Budget ID is required'}, status=400)
+            
+        budget = Budget.objects.get(id=budget_id, user=request.user)
+        
+        if period:
+            from datetime import datetime
+            period_date = datetime.strptime(period + "-01", "%Y-%m-%d").date()
+            budget.period = period_date
+            
+        if category_id:
+            category = Category.objects.get(id=category_id)
+            budget.category = category
+            
+        if budget_amount:
+            budget.budget_amount = budget_amount
+            
+        budget.save()
+        
+        return JsonResponse({'status': 'success', 'message': 'Budget updated successfully'})
+        
+    except Budget.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Budget not found'}, status=404)
+    except Category.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Category not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+@login_required
+@csrf_exempt
+def delete_budget_view(request):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
+    
+    try:
+        budget_id = request.POST.get('budget_id')
+        
+        if not budget_id:
+            return JsonResponse({'status': 'error', 'message': 'Budget ID is required'}, status=400)
+            
+        budget = Budget.objects.get(id=budget_id, user=request.user)
+        budget.delete()
+        
+        return JsonResponse({'status': 'success', 'message': 'Budget deleted successfully'})
+        
+    except Budget.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Category not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+@login_required
+def get_budgets_view(request):
+    try:
+        # 獲取當前用戶的所有預算
+        budgets = Budget.objects.filter(user=request.user)
+        
+        # 序列化預算數據
+        budget_list = []
+        for budget in budgets:
+            # 計算剩餘金額
+            # 獲取與該預算相同月份和類別的交易
+            from django.db.models import Sum
+            from datetime import datetime
+            
+            year = budget.period.year
+            month = budget.period.month
+            
+            # 獲取該月的支出總額
+            spent_amount = Transaction.objects.filter(
+                user=request.user,
+                category=budget.category,
+                date__year=year,
+                date__month=month,
+                transaction_type=False  # 僅支出交易
+            ).aggregate(total=Sum('amount'))['total'] or 0
+            
+            # 計算剩餘金額
+            remaining_amount = budget.budget_amount - spent_amount
+            
+            # 添加預算信息
+            budget_dict = {
+                'id': budget.id,
+                'period': budget.period.strftime('%Y-%m'),
+                'category_id': budget.category.id,
+                'category_name': budget.category.name,
+                'budget_amount': str(budget.budget_amount),
+                'remaining_amount': str(remaining_amount)
+            }
+            budget_list.append(budget_dict)
+            
+        return JsonResponse({'status': 'success', 'budgets': budget_list})
+        
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': f'獲取預算時發生錯誤: {str(e)}'}, status=500)

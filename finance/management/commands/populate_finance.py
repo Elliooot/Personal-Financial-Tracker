@@ -12,12 +12,12 @@ from finance.models import Transaction, User, Account, Currency, Category
 class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         transactions = [
-            { 'date': '2024/02/01', 'category': 'Transportation', 'transaction_type': 'Expense', 'currency': '£', 'amount': '2.95', 'account': 'Bank', 'description': 'First Glasgow'},
-            { 'date': '2024/02/01', 'category': 'Investment',     'transaction_type': 'Income',  'currency': '£', 'amount': '4000', 'account': 'Bank', 'description': 'CHRIS LIU'},
-            { 'date': '2024/02/03', 'category': 'Food',           'transaction_type': 'Expense', 'currency': '£', 'amount': '7.45', 'account': 'Cash', 'description': 'Subway'},
-            { 'date': '2024/02/03', 'category': 'Shopping',       'transaction_type': 'Expense', 'currency': '£', 'amount': '4.90', 'account': 'Card', 'description': 'Circuit top up'},
-            { 'date': '2024/02/16', 'category': 'Food',           'transaction_type': 'Expense', 'currency': '£', 'amount': '7.45', 'account': 'Cash', 'description': 'Subway'},
-            { 'date': '2024/02/20', 'category': 'Food',           'transaction_type': 'Expense', 'currency': '£', 'amount': '7.45', 'account': 'Bank', 'description': 'Subway'}
+            { 'date': '2024/02/01', 'category': 'Transportation', 'transaction_type': 'Expense', 'currency': 'GBP', 'amount': '2.95', 'account': 'Bank', 'description': 'First Glasgow'},
+            { 'date': '2024/02/01', 'category': 'Investment',     'transaction_type': 'Income',  'currency': 'GBP', 'amount': '4000', 'account': 'Bank', 'description': 'CHRIS LIU'},
+            { 'date': '2024/02/03', 'category': 'Food',           'transaction_type': 'Expense', 'currency': 'GBP', 'amount': '7.45', 'account': 'Cash', 'description': 'Subway'},
+            { 'date': '2024/02/03', 'category': 'Shopping',       'transaction_type': 'Expense', 'currency': 'GBP', 'amount': '4.90', 'account': 'Card', 'description': 'Circuit top up'},
+            { 'date': '2024/02/16', 'category': 'Food',           'transaction_type': 'Expense', 'currency': 'GBP', 'amount': '7.45', 'account': 'Cash', 'description': 'Subway'},
+            { 'date': '2024/02/20', 'category': 'Food',           'transaction_type': 'Expense', 'currency': 'GBP', 'amount': '7.45', 'account': 'Bank', 'description': 'Subway'}
         ]
 
         # Ensure these default objects exist or create them as needed.

@@ -41,7 +41,7 @@
             <td>{{ c.transaction_count }}</td>
             <td>£{{ c.total_amount|default:"0.00"|floatformat:2 }}</td>
             <td>
-              <button class='btn btn-danger btn-sm' onclick="deleteCategory('false', ${cat.id})">Delete</button>
+              <button class='btn btn-danger btn-sm' onclick="deleteCategory('true', ${cat.id})">Delete</button>
             </td>
           </tr>
           {% empty %}
@@ -70,7 +70,7 @@
         <td>{{ c.transaction_count }}</td>
         <td>£{{ c.total_amount|default:"0.00"|floatformat:2 }}</td>
         <td>
-          <button class="btn btn-danger btn-sm" onclick="deleteCategory({{ c.id }})">Delete</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteCategory('false', ${cat.id})">Delete</button>
         </td>
       </tr>
       {% empty %}
@@ -93,7 +93,9 @@
             <th>Action</th>
           </tr>
         </thead>
-        <tbody id="budget-table"></tbody>
+        <tbody id="budget-table">
+          <tr><td colspan="5" class="text-center">Loading budgets...</td></tr>
+        </tbody>
       </table>
     </div>
 
@@ -128,10 +130,10 @@
       </table>
     </div>
   </div>
-  <!-- <div style="display: none;">
+  <div style="display: none;">
     <h4>Debug Info:</h4>
     <pre id="debug-categories-json">{{ categories_json }}</pre>
-  </div> -->
+  </div>
 </div>
 {% endblock %}
 
@@ -145,6 +147,12 @@
   
   // 確保初始化後更新表格
   document.addEventListener('DOMContentLoaded', function() {
+    if (window.loadBudgets) {
+      loadBudgets();
+    } else {
+      console.error('loadBudgets function not found');
+    }
+
     if (window.updateManagementTables) {
       updateManagementTables();
     } else {
