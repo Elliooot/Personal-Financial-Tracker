@@ -462,3 +462,89 @@ def get_budgets_view(request):
         
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': f'獲取預算時發生錯誤: {str(e)}'}, status=500)
+
+@csrf_exempt
+def add_currency_view(request):
+    if request.method == 'POST':
+        currency_code = request.POST.get('currency_code')
+        # exchange_rate = request.POST.get('exchange_rate')
+        
+        try:
+            currency = Currency.objects.create(
+                currency_code=currency_code,
+                # exchange_rate=exchange_rate
+            )
+            return JsonResponse({'status': 'success', 'message': 'Currency added successfully'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'Add currency failed: {str(e)}'}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
+
+@csrf_exempt
+def delete_currency_view(request):
+    if request.method == 'POST':
+        currency_id = request.POST.get('currency_id')
+        
+        try:
+            currency = Currency.objects.get(id=currency_id)
+            currency.delete()
+            return JsonResponse({'status': 'success', 'message': 'Currency deleted successfully'})
+        except Currency.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Currency not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'Delete currency failed: {str(e)}'}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
+
+@csrf_exempt
+def add_account_view(request):
+    if request.method == 'POST':
+        account_name = request.POST.get('account_name')
+        account_type = request.POST.get('account_type')
+        balance = request.POST.get('balance')
+        
+        try:
+            account = Account.objects.create(
+                user=request.user,
+                account_name=account_name,
+                account_type=account_type,
+                balance=balance,
+            )
+            return JsonResponse({'status': 'success', 'message': 'Account added successfully'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'Add account failed: {str(e)}'}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
+
+@csrf_exempt
+def delete_account_view(request):
+    if request.method == 'POST':
+        account_id = request.POST.get('account_id')
+        
+        if not account_id:
+            return JsonResponse({'status': 'error', 'message': 'Account ID is required'}, status=400)
+        
+        try:
+            account = Account.objects.get(id=account_id)
+            account.delete()
+            return JsonResponse({'status': 'success', 'message': 'Account deleted successfully'})
+        except Account.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Account not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'Delete account failed: {str(e)}'}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
+
+@csrf_exempt
+
+def get_accounts_view(request):
+    try:
+        accounts = Account.objects.filter(user=request.user)
+        account_list = []
+        for account in accounts:
+            account_dict = {
+                'id': account.id,
+                'account_name': account.account_name,
+                'account_type': account.account_type,
+                'balance': str(account.balance)
+            }
+            account_list.append(account_dict)
+        return JsonResponse({'status': 'success', 'accounts': account_list})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': f'Get accounts failed: {str(e)}'}, status=500)

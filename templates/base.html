@@ -13,6 +13,11 @@
   <meta name="update-budget-url" content="{% url 'update_budget' %}">
   <meta name="delete-budget-url" content="{% url 'delete_budget' %}">
   <meta name="get-budgets-url" content="{% url 'get_budgets' %}">
+  <meta name="add-currency-url" content="{% url 'add_currency' %}">
+  <meta name="delete-currency-url" content="{% url 'delete_currency' %}">
+  <meta name="add-account-url" content="{% url 'add_account' %}">
+  <meta name="delete-account-url" content="{% url 'delete_account' %}">
+  <meta name="get-accounts-url" content="{% url 'get_accounts' %}">
   <title>{% block title %}Wallet Notes{% endblock %}</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
@@ -187,10 +192,10 @@
             <div class="mb-3">
               <label for="addAccount" class="form-label">Account</label>
               <select class="form-select" id="addAccount">
-                <option value="cash">Cash</option>
-                <option value="bank">Bank Account</option>
-                <option value="credit_card">Credit Card</option>
-                <option value="debit_card">Debit Card</option>
+                <option value="Cash">Cash</option>
+                <option value="Bank">Bank Account</option>
+                <option value="Credit Card">Credit Card</option>
+                <option value="Debit Card">Debit Card</option>
               </select>
             </div>
             <div class="mb-3">
@@ -339,6 +344,7 @@
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             <button type="button" class="btn btn-primary" id="saveCurrency">Save</button>
           </div>
+        </div>
       </div>
     </div>
   </div>
@@ -355,7 +361,7 @@
           <form id="addAccountForm">
             <div class="mb-3">
               <label for="account" class="form-label">Account Name</label>
-              <input type="text" class="form-control" id="account" required>
+              <input type="text" class="form-control" id="accountName" required>
             </div>
             <div class="mb-3">
               <label for="addAccount" class="form-label">Account</label>
@@ -368,13 +374,14 @@
             </div>
             <div class="mb-3">
               <label for="balance" class="form-label">Balance</label>
-              <input type="text" class="form-control" id="balance" required>
+              <input type="text" class="form-control" id="addBalance" required>
             </div>
           </form>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             <button type="button" class="btn btn-primary" id="saveAccount">Save</button>
           </div>
+        </div>
       </div>
     </div>
   </div>
@@ -761,7 +768,7 @@
       addModal.hide();
     });
 
-    function updateManagementTables() {
+    function updateCategoryTables() {
       const incomeTable = document.getElementById('income-categories-table');
       const expenseTable = document.getElementById('expense-categories-table');
       
@@ -1069,7 +1076,7 @@
 
     function deleteCategory(is_income, categoryId) {
       console.log('Deleting category:', categoryId);
-      if (!confirm('確定要刪除這個類別嗎？')) {
+      if (!confirm('Are you sure you want to delete this category?')) {
         return;
       }
 
@@ -1105,7 +1112,7 @@
         console.log('Parsed data:', data);
         if (data.status === 'success') {
           window.categories[is_income] = categories[is_income].filter(c => c.id !== categoryId);
-          updateManagementTables();
+          updateCategoryTables();
           updateCategoryDropdown();
           console.log('Category deleted successfully:', data.message);
         } else {
@@ -1159,7 +1166,7 @@
             transaction_count: 0,
             total_amount: "0.00"
           });
-          updateManagementTables();
+          updateCategoryTables();
           updateCategoryDropdown();
         } else if(data.status === 'exists'){
             alert("Category already exists");          
@@ -1202,7 +1209,7 @@
             transaction_count: 0,
             total_amount: "0.00"
           });
-          updateManagementTables();
+          updateCategoryTables();
           updateCategoryDropdown();
         } else if(data.status === 'exists'){
             alert("Category already exists");          
@@ -1216,6 +1223,192 @@
         alert('Error when adding expense category');
       });
     });
+
+    document.getElementById('saveCurrency').addEventListener('click', () => {
+      const currencyName = document.getElementById('currency').value;
+
+      let addCurrencyUrl = 'add-currency/';
+      const addCurrencyUrlMeta = document.querySelector('meta[name="add-currency-url"]');
+      if (addCurrencyUrlMeta) {
+        addCurrencyUrl = addCurrencyUrlMeta.getAttribute('content');
+      }
+
+      fetch(addCurrencyUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          'name': currencyName
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          updateCategoryTables();
+        } else if(data.status === 'exists'){
+            alert("Currency already exists");          
+        }else {
+          alert(data.message);
+        }
+        const modal = bootstrap.Modal.getInstance(document.getElementById('addCurrencyModal'));
+        modal.hide();
+      })
+      .catch(error => {
+        alert('Error when adding currency');
+      });
+    });
+
+    function deleteCurrency(id) {
+      const deleteCurrencyUrl = 'delete-currency/';
+      const deleteCurrencyUrlMeta = document.querySelector('meta[name="delete-currency-url"]');
+      if (deleteCurrencyUrlMeta) {
+        deleteCurrencyUrl = deleteCurrencyUrlMeta.getAttribute('content');
+      }
+
+      fetch(deleteCurrencyUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `id=${id}`
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          window.currencies = window.currencies.filter(c => c.id !== id);
+          updateCategoryTables();
+        } else {
+          alert(data.message);
+        }
+      })
+      .catch(error => {
+        alert('Error when deleting currency');
+      });
+    }
+
+    function loadAccounts() {
+      let getAccountsUrl = 'get-accounts/';
+      const getAccountsUrlMeta = document.querySelector('meta[name="get-accounts-url"]');
+      if (getAccountsUrlMeta) {
+        getAccountsUrl = getAccountsUrlMeta.getAttribute('content');
+      }
+      
+      fetch(getAccountsUrl)
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === 'success') {
+            accounts = data.accounts;
+            updateAccountTable();
+          } else {
+            console.error('Failed to load accounts:', data.message);
+          }
+        })
+        .catch(error => {
+          console.error('Error loading accounts:', error);
+        });
+    }
+
+    function updateAccountTable() {
+      const accountTable = document.getElementById('account-table');
+      if (!accountTable) {
+        console.error('Account table not found');
+        return;
+      }
+      
+      if (!window.accounts) {
+        console.error('Accounts not defined');
+        return;
+      }
+      
+      accountTable.innerHTML = '';
+      
+      window.accounts.forEach(account => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${account.account_name}</td>
+          <td>${account.account_type}</td>
+          <td>${account.balance}</td>
+          <td>
+            <button class="btn btn-danger btn-sm" onclick="deleteAccount(${account.id})">Delete</button>
+          </td>
+        `;
+        accountTable.appendChild(row);
+      });
+    }
+
+    document.getElementById('saveAccount').addEventListener('click', () => {
+      const accountName = document.getElementById('accountName').value;
+      const accountType = document.getElementById('addAccount').value;
+      const balance = document.getElementById('addBalance').value;
+
+      let addAccountUrl = 'add-account/';
+      const addAccountUrlMeta = document.querySelector('meta[name="add-account-url"]');
+      if (addAccountUrlMeta) {
+        addAccountUrl = addAccountUrlMeta.getAttribute('content');
+      }
+
+      fetch(addAccountUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          'account_name': accountName,
+          'account_type': accountType,
+          'balance': balance,
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          loadAccounts();
+          document.getElementById('saveAccount').blur();
+        } else if(data.status === 'exists'){
+            alert("Account already exists");          
+        }else {
+          alert(data.message);
+        }
+        const modal = bootstrap.Modal.getInstance(document.getElementById('addAccountModal'));
+        modal.hide();
+      })
+      .catch(error => {
+        console.error('Error when adding account:', error);
+        alert('Error when adding account' + error);
+      });
+    })
+
+    function deleteAccount(account_id) {
+      if (!confirm('You are about to delete this budget. Are you sure?')) {
+        return;
+      }
+
+      let deleteAccountUrl = 'delete-account/';
+      const deleteAccountUrlMeta = document.querySelector('meta[name="delete-account-url"]');
+      if (deleteAccountUrlMeta) {
+        deleteAccountUrl = deleteAccountUrlMeta.getAttribute('content');
+      }
+
+      fetch(deleteAccountUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `account_id=${account_id}`
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          window.accounts = window.accounts.filter(a => a.id !== id);
+          loadAccounts();
+        } else {
+          alert(data.message);
+        }
+      })
+      .catch(error => {
+        alert('Error when deleting account:' + error);
+      });
+    }
 
     function exportToCSV() {
       const headers = ["Date", "Categories", "Pending", "Description"];
@@ -1293,11 +1486,15 @@
       }
       
       if(document.getElementById('management-page')){
-        updateManagementTables(); // Initialize Management Table
+        updateCategoryTables(); // Initialize Management Table
       }
 
       if (document.getElementById('budget-table')) {
         loadBudgets();
+      }
+
+      if (document.getElementById('account-table')) {
+        loadAccounts();
       }
 
       // Other general initialization

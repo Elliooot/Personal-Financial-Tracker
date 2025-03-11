@@ -37,4 +37,9 @@ urlpatterns = [
     path('update-budget/', views.update_budget_view, name='update_budget'),
     path('delete-budget/', views.delete_budget_view, name='delete_budget'),
     path('get-budgets/', views.get_budgets_view, name='get_budgets'),
+    path('add-currency/', views.add_currency_view, name='add_currency'),
+    path('delete-currency/', views.delete_currency_view, name='delete_currency'),
+    path('add-account/', views.add_account_view, name='add_account'),
+    path('delete-account/', views.delete_account_view, name='delete_account'),
+    path('get-accounts/', views.get_accounts_view, name='get_accounts')
 ]
