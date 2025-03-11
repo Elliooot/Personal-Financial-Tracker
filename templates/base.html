@@ -716,7 +716,7 @@
     });
     const activeBtn = document.querySelector(`.filter-btn[onclick="switchMode('${mode}')"]`);
     if (activeBtn) {
-        activeBtn.classList.add('active');
+      activeBtn.classList.add('active');
     }
 
     // handle month dropdown
@@ -724,23 +724,27 @@
     const yearSelect = document.getElementById('yearSelect');
     
     if (monthSelect) {
-        if (mode === 'year') {
-            monthSelect.disabled = true;
-            monthSelect.value = '';
-            monthSelect.style.color = 'transparent';
-        } else {
-            // when switch to month mode
-            monthSelect.disabled = false;
-            monthSelect.style.color = '';
-            
-            // get the selected year
-            const selectedYear = yearSelect.value;
-            
-            // use the saved monthsByYear data to re-initialize month options
-            if (window.monthsByYear && window.monthsByYear[selectedYear]) {
-                initMonthOptions(window.monthsByYear[selectedYear]);
-            }
+      const monthSelectContainer = monthSelect.parentElement;
+  
+      if (mode === 'year') {
+        monthSelectContainer.style.display = 'none'; // hide the month dropdown
+        monthSelect.disabled = true;
+        monthSelect.value = '';
+      } else {
+        // when switch to month mode
+        monthSelectContainer.style.display = ''; // show the month dropdown
+        monthSelect.disabled = false;
+        monthSelect.style.color = '';
+        
+        // automatically select the latest month
+        const selectedYear = yearSelect.value;
+        
+        if (window.monthsByYear && window.monthsByYear[selectedYear]) {
+          const availableMonths = window.monthsByYear[selectedYear];
+          const latestMonth = Math.max(...availableMonths);
+          monthSelect.value = latestMonth;
         }
+      }
     }
     updateCharts(mode);
   }
@@ -749,14 +753,15 @@
     const yearSelect = document.getElementById('yearSelect');
     if (yearSelect) {
       const selectedYear = yearSelect.value;
-      console.log('Selected year:', selectedYear);
       
       // update month options
       if (window.monthsByYear && window.monthsByYear[selectedYear]) {
         initMonthOptions(window.monthsByYear[selectedYear]);
       }
       
-      updateCharts('year');
+      // keep current mode unchanged
+      const currentMode = document.getElementById('monthSelect').parentElement.style.display === 'none' ? 'year' : 'month';
+      updateCharts(currentMode);
     }
   }
 
@@ -773,15 +778,13 @@
     if (!yearSelect) return;
 
     const selectedYear = yearSelect.value;
-    const selectedMonth = (mode === 'month' && monthSelect && !monthSelect.disabled) 
-        ? monthSelect.value 
-        : null;
+    const selectedMonth = mode === 'month' ? monthSelect.value : null;
 
     const params = new URLSearchParams();
     params.append('year', selectedYear || '');
     params.append('mode', mode || 'year');
     if (selectedMonth) {
-        params.append('month', selectedMonth);
+      params.append('month', selectedMonth);
     }
 
     const url = `/api/statistics/data/?${params.toString()}`;
@@ -789,36 +792,75 @@
     console.log('Fetching URL:', url);
 
     fetch(url)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => updateStatistics(data))
-        .catch(error => {
-            alert('Error updating statistics.');
-        });
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => updateStatistics(data))
+      .catch(error => {
+        alert('Error updating statistics.');
+      });
   }
 
-// function updateLineChart(data, mode) {
+function updateLineChart(data, mode) {
+
+  if (!incomeExpenseChart) return;
+
+  let labels = [];
+  let expenseData = [];
+  let incomeData = [];
+  let balanceData = [];
+
+  if (mode === 'year') {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     
-// }
+    for (let month = 1; month <= 12; month++) {
+      labels.push(months[month - 1]);
+      const monthData = data.monthly_data?.[month] || { income: 0, expense: 0 };
+      expenseData.push(monthData.expense);
+      incomeData.push(monthData.income);
+      balanceData.push(monthData.income - monthData.expense);
+    }
+  } else {
+    const selectedYear = parseInt(document.getElementById('yearSelect').value);
+    const selectedMonth = parseInt(document.getElementById('monthSelect').value);
+    
+    const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+    
+    for (let day = 1; day <= daysInMonth; day++) {
+      labels.push(day.toString());
+      const dayData = data.daily_data?.[day] || { income: 0, expense: 0 };
+      expenseData.push(dayData.expense);
+      incomeData.push(dayData.income);
+      balanceData.push(dayData.income - dayData.expense);
+    }
+  }
+
+  // update line chart data
+  incomeExpenseChart.data.labels = labels;
+  incomeExpenseChart.data.datasets[0].data = expenseData;
+  incomeExpenseChart.data.datasets[1].data = incomeData;
+  incomeExpenseChart.data.datasets[2].data = balanceData;
+
+  incomeExpenseChart.update();
+}
 
 function updatePieChart(chart, data, type) {
-    const categoryData = data[`${type}_by_category`];
-    if (categoryData && Object.keys(categoryData).length > 0) {
-        chart.data.labels = Object.keys(categoryData);
-        chart.data.datasets[0].data = Object.values(categoryData);
-        chart.data.datasets[0].backgroundColor = ['#A8DFF1', '#ECBA73', '#F5E2D4', '#024757', '#E5989B'];
-        chart.data.datasets[0].datalabels.color = '#FFCE56';
-    } else {
-        chart.data.labels = [`No ${type.charAt(0).toUpperCase() + type.slice(1)} Data`];
-        chart.data.datasets[0].data = [1];
-        chart.data.datasets[0].backgroundColor = ['#E0E0E0'];
-        chart.data.datasets[0].datalabels.color = '#FFCE56';
-    }
-    chart.update();
+  const categoryData = data[`${type}_by_category`];
+  if (categoryData && Object.keys(categoryData).length > 0) {
+    chart.data.labels = Object.keys(categoryData);
+    chart.data.datasets[0].data = Object.values(categoryData);
+    chart.data.datasets[0].backgroundColor = ['#A8DFF1', '#ECBA73', '#F5E2D4', '#024757', '#E5989B'];
+    chart.data.datasets[0].datalabels.color = '#FFCE56';
+  } else {
+    chart.data.labels = [`No ${type.charAt(0).toUpperCase() + type.slice(1)} Data`];
+    chart.data.datasets[0].data = [1];
+    chart.data.datasets[0].backgroundColor = ['#E0E0E0'];
+    chart.data.datasets[0].datalabels.color = '#FFCE56';
+  }
+  chart.update();
 }
 
   function updateRankingTable(data, type) {
@@ -830,123 +872,106 @@ function updatePieChart(chart, data, type) {
     rankingTable.innerHTML = '';
 
     const createEmptyRows = (startIndex, count) => {
-        for (let i = startIndex; i < count; i++) {
-            const row = document.createElement('tr');
-            row.className = `rank-item ${type}${i + 1}`;
-            row.innerHTML = `
-                <td>${i + 1}</td>
-                <td>-</td>
-                <td>0.00 £</td>
-            `;
-            rankingTable.appendChild(row);
-        }
+      for (let i = startIndex; i < count; i++) {
+        const row = document.createElement('tr');
+        row.className = `rank-item ${type}${i + 1}`;
+        row.innerHTML = `
+          <td>${i + 1}</td>
+          <td>-</td>
+          <td>0.00 £</td>
+        `;
+        rankingTable.appendChild(row);
+      }
     };
 
     const categoryData = data[`${type}_by_category`];
     if (categoryData && Object.keys(categoryData).length > 0) {
-        // convert category and amount to array and sort
-        const items = Object.entries(categoryData)
-            .map(([category, amount]) => ({category, amount}))
-            .sort((a, b) => b.amount - a.amount)
-            .slice(0, 5);
+      // convert category and amount to array and sort
+      const items = Object.entries(categoryData)
+        .map(([category, amount]) => ({category, amount}))
+        .sort((a, b) => b.amount - a.amount)
+        .slice(0, 5);
 
-        items.forEach((item, index) => {
-            const row = document.createElement('tr');
-            row.className = `rank-item ${type}${index + 1}`;
-            row.innerHTML = `
-                <td>${index + 1}</td>
-                <td>${item.category}</td>
-                <td>${item.amount.toFixed(2)} £</td>
-            `;
-            rankingTable.appendChild(row);
-        });
+      items.forEach((item, index) => {
+        const row = document.createElement('tr');
+        row.className = `rank-item ${type}${index + 1}`;
+        row.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${item.category}</td>
+          <td>${item.amount.toFixed(2)} £</td>
+        `;
+        rankingTable.appendChild(row);
+      });
 
-        // if no data, show 5 empty rows
-        createEmptyRows(items.length, 5);
+      // if no data, show 5 empty rows
+      createEmptyRows(items.length, 5);
     } else {
-        // if no data, show 5 empty rows
-        createEmptyRows(0, 5);
+      // if no data, show 5 empty rows
+      createEmptyRows(0, 5);
     }
-  }
-
-  function updateExpenseRanking(data) {
-    updateRankingTable(data, 'expense');
-  }
-
-  function updateIncomeRanking(data) {
-    updateRankingTable(data, 'income');
   }
 
   function updateStatistics(data) {
     try {
-        console.log('Updating statistics with data:', data);
-        
-        const formatCurrency = (number) => {
-            const prefix = number >= 0 ? '+' : '';
-            return `${prefix}${number.toFixed(2)} £`;
-        };
+      console.log('Updating statistics with data:', data);
+      
+      const formatCurrency = (number) => {
+        const prefix = number >= 0 ? '+' : '';
+        return `${prefix}${number.toFixed(2)} £`;
+      };
 
-        // update statistics block
-        const incomeElement = document.querySelector('.stat-item.in h3');
-        const expenseElement = document.querySelector('.stat-item.out h3');
-        const balanceElement = document.querySelector('.stat-item.balance h3');
-        const balanceBox = document.querySelector('.stat-item.balance');
-        const mode = document.getElementById('monthSelect').value === '0' ? 'year' : 'month';
+      // update statistics block
+      const incomeElement = document.querySelector('.stat-item.in h3');
+      const expenseElement = document.querySelector('.stat-item.out h3');
+      const balanceElement = document.querySelector('.stat-item.balance h3');
+      const balanceBox = document.querySelector('.stat-item.balance');
+      const mode = document.getElementById('monthSelect').parentElement.style.display === 'none' ? 'year' : 'month';
 
 
-        if (incomeElement) incomeElement.textContent = formatCurrency(data.income);
-        if (expenseElement) expenseElement.textContent = formatCurrency(-data.expense);
-        if (balanceElement) {
-            balanceElement.textContent = formatCurrency(data.balance);
-            if (balanceBox) {
-                if (data.balance < 0) {
-                    balanceBox.style.backgroundColor = '#E50046'; 
-                } else if (data.balance > 0) {
-                    balanceBox.style.backgroundColor = '#1F7D53'; 
-                } else {
-                    balanceBox.style.backgroundColor = ''; 
-                }
-            }
+      if (incomeElement) incomeElement.textContent = formatCurrency(data.income);
+      if (expenseElement) expenseElement.textContent = formatCurrency(-data.expense);
+      if (balanceElement) {
+        balanceElement.textContent = formatCurrency(data.balance);
+        if (balanceBox) {
+          if (data.balance < 0) {
+            balanceBox.style.backgroundColor = '#E50046'; 
+          } else if (data.balance > 0) {
+            balanceBox.style.backgroundColor = '#1F7D53'; 
+          } else {
+            balanceBox.style.backgroundColor = ''; 
+          }
         }
+      }
 
-        // update income and expense line chart
-        // updateLineChart(data, mode);
-
-        // update expense pie chart
-        if (typeof updateExpenseChart === 'function') {
-            updateExpenseChart(data);
-        }
-        // update income pie chart
-        if (typeof updateIncomeChart === 'function') {
-            updateIncomeChart(data);
-        }
-        updatePieChart(expenseChart, data, 'expense');
-        updatePieChart(incomeChart, data, 'income');
-        // update expense ranking table
-        updateExpenseRanking(data);
-        // update income ranking table
-        updateIncomeRanking(data);
+      // update line chart
+      updateLineChart(data, mode);
+      // update pie charts
+      updatePieChart(expenseChart, data, 'expense');
+      updatePieChart(incomeChart, data, 'income');
+      // update ranking tables
+      updateRankingTable(data, 'expense');
+      updateRankingTable(data, 'income');
     } catch (error) {
-        console.error('Error in updateStatistics:', error);
-        throw error;
+      console.error('Error in updateStatistics:', error);
+      throw error;
     }
   }
 
     // initialize when DOMContentLoaded
     document.addEventListener('DOMContentLoaded', function() {
-        if (document.getElementById('statistics-page')) {
-            initStatisticsPage();
-            
-            // rebind month selector event
-            const monthSelect = document.getElementById('monthSelect');
-            const yearSelect = document.getElementById('yearSelect');
-            if (monthSelect) {
-                monthSelect.addEventListener('change', handleMonthChange);
-            }
-            if (yearSelect) {
-                yearSelect.addEventListener('change', handleYearChange);
-            }
+      if (document.getElementById('statistics-page')) {
+        initStatisticsPage();
+        
+        // rebind month selector event
+        const monthSelect = document.getElementById('monthSelect');
+        const yearSelect = document.getElementById('yearSelect');
+        if (monthSelect) {
+          monthSelect.addEventListener('change', handleMonthChange);
         }
+        if (yearSelect) {
+          yearSelect.addEventListener('change', handleYearChange);
+        }
+      }
     });
 
     document.getElementById('saveChanges').addEventListener('click', () => {
@@ -1807,5 +1832,7 @@ function updatePieChart(chart, data, type) {
   </script>
   
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
 </body>
 </html>
