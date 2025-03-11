@@ -644,71 +644,72 @@
         console.error('Error:', error);
         alert('An error occurred while deleting the transaction. Please check console.');
       });
+    }
 
   // For Statistics Page
   function initStatisticsPage() {
-  console.log('Initializing statistics page...');
+    console.log('Initializing statistics page...');
 
-  // Get transaction data from backend
-  fetch('/api/transactions/dates/')
-    .then(response => response.json())
-    .then(data => {
-      window.monthsByYear = data.monthsByYear; 
-      initYearOptions(data.years);
+    // Get transaction data from backend
+    fetch('/api/transactions/dates/')
+      .then(response => response.json())
+      .then(data => {
+        window.monthsByYear = data.monthsByYear; 
+        initYearOptions(data.years);
       initMonthOptions(data.monthsByYear[Math.max(...data.years)]);  // init month options for the latest year
       switchMode('year');
     })
     .catch(error => {
       console.error('Error fetching transaction dates:', error);
     });
-}
-
-function initYearOptions(availableYears) {
-  const yearSelect = document.getElementById('yearSelect');
-  if (!yearSelect) return;
-
-  yearSelect.innerHTML = ''; // clear existing options
-  
-  // generate options based on available years
-  availableYears.forEach(year => {
-    const option = document.createElement('option');
-    option.value = year;
-    option.textContent = year;
-    yearSelect.appendChild(option);
-  });
-
-  // set the latest year as default
-  if (availableYears.length > 0) {
-        yearSelect.value = Math.max(...availableYears);
-    }
-}
-
-function initMonthOptions(availableMonths) {
-  const monthSelect = document.getElementById('monthSelect');
-  if (!monthSelect) return;
-
-  monthSelect.innerHTML = ''; // clear existing options
-  
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-
-  // generate options based on available months
-  availableMonths.forEach(month => {
-    const option = document.createElement('option');
-    option.value = month;
-    option.textContent = monthNames[month - 1];
-    monthSelect.appendChild(option);
-  });
-
-  // set the latest month as default
-  if (availableMonths.length > 0) {
-    monthSelect.value = Math.max(...availableMonths);
   }
-}
 
-function switchMode(mode) {
+  function initYearOptions(availableYears) {
+    const yearSelect = document.getElementById('yearSelect');
+    if (!yearSelect) return;
+
+    yearSelect.innerHTML = ''; // clear existing options
+    
+    // generate options based on available years
+    availableYears.forEach(year => {
+      const option = document.createElement('option');
+      option.value = year;
+      option.textContent = year;
+      yearSelect.appendChild(option);
+    });
+
+    // set the latest year as default
+    if (availableYears.length > 0) {
+      yearSelect.value = Math.max(...availableYears);
+    }
+  }
+
+  function initMonthOptions(availableMonths) {
+    const monthSelect = document.getElementById('monthSelect');
+    if (!monthSelect) return;
+
+    monthSelect.innerHTML = ''; // clear existing options
+  
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+
+    // generate options based on available months
+    availableMonths.forEach(month => {
+      const option = document.createElement('option');
+      option.value = month;
+      option.textContent = monthNames[month - 1];
+      monthSelect.appendChild(option);
+    });
+
+    // set the latest month as default
+    if (availableMonths.length > 0) {
+      monthSelect.value = Math.max(...availableMonths);
+    }
+  }
+
+  function switchMode(mode) {
     // update button status
     document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.classList.remove('active');
@@ -742,30 +743,30 @@ function switchMode(mode) {
         }
     }
     updateCharts(mode);
-}
-
-function handleYearChange() {
-  const yearSelect = document.getElementById('yearSelect');
-  if (yearSelect) {
-    const selectedYear = yearSelect.value;
-    console.log('Selected year:', selectedYear);
-    
-    // update month options
-    if (window.monthsByYear && window.monthsByYear[selectedYear]) {
-      initMonthOptions(window.monthsByYear[selectedYear]);
-    }
-    
-    updateCharts('year');
   }
-}
 
-function handleMonthChange() {
-    if (document.getElementById('monthSelect') && !document.getElementById('monthSelect').disabled) {
-        updateCharts('month');  
+  function handleYearChange() {
+    const yearSelect = document.getElementById('yearSelect');
+    if (yearSelect) {
+      const selectedYear = yearSelect.value;
+      console.log('Selected year:', selectedYear);
+      
+      // update month options
+      if (window.monthsByYear && window.monthsByYear[selectedYear]) {
+        initMonthOptions(window.monthsByYear[selectedYear]);
+      }
+      
+      updateCharts('year');
     }
-}
+  }
 
-function updateCharts(mode) {
+  function handleMonthChange() {
+    if (document.getElementById('monthSelect') && !document.getElementById('monthSelect').disabled) {
+      updateCharts('month');  
+    }
+  }
+
+  function updateCharts(mode) {
     const yearSelect = document.getElementById('yearSelect');
     const monthSelect = document.getElementById('monthSelect');
     
@@ -798,7 +799,7 @@ function updateCharts(mode) {
         .catch(error => {
             alert('Error updating statistics.');
         });
-}
+  }
 
 // function updateLineChart(data, mode) {
     
@@ -820,7 +821,7 @@ function updatePieChart(chart, data, type) {
     chart.update();
 }
 
-function updateRankingTable(data, type) {
+  function updateRankingTable(data, type) {
     const tableId = type === 'expense' ? 'expenseRankingTable' : 'incomeRankingTable';
     const rankingTable = document.getElementById(tableId);
     if (!rankingTable) return;
@@ -866,17 +867,17 @@ function updateRankingTable(data, type) {
         // if no data, show 5 empty rows
         createEmptyRows(0, 5);
     }
-}
+  }
 
-function updateExpenseRanking(data) {
+  function updateExpenseRanking(data) {
     updateRankingTable(data, 'expense');
-}
+  }
 
-function updateIncomeRanking(data) {
+  function updateIncomeRanking(data) {
     updateRankingTable(data, 'income');
-}
+  }
 
-function updateStatistics(data) {
+  function updateStatistics(data) {
     try {
         console.log('Updating statistics with data:', data);
         
@@ -929,81 +930,24 @@ function updateStatistics(data) {
         console.error('Error in updateStatistics:', error);
         throw error;
     }
-}
+  }
 
-// initialize when DOMContentLoaded
-document.addEventListener('DOMContentLoaded', function() {
-    if (document.getElementById('statistics-page')) {
-        initStatisticsPage();
-        
-        // rebind month selector event
-        const monthSelect = document.getElementById('monthSelect');
-        const yearSelect = document.getElementById('yearSelect');
-        if (monthSelect) {
-            monthSelect.addEventListener('change', handleMonthChange);
+    // initialize when DOMContentLoaded
+    document.addEventListener('DOMContentLoaded', function() {
+        if (document.getElementById('statistics-page')) {
+            initStatisticsPage();
+            
+            // rebind month selector event
+            const monthSelect = document.getElementById('monthSelect');
+            const yearSelect = document.getElementById('yearSelect');
+            if (monthSelect) {
+                monthSelect.addEventListener('change', handleMonthChange);
+            }
+            if (yearSelect) {
+                yearSelect.addEventListener('change', handleYearChange);
+            }
         }
-        if (yearSelect) {
-            yearSelect.addEventListener('change', handleYearChange);
-        }
-    }
-});
-
-    // 打开新增弹窗
-    function openAddRecurringTransactionModal() {
-      document.getElementById('recurringDay').value = '';
-      document.getElementById('recurringType').value = 'income';
-      document.getElementById('recurringAmount').value = '';
-      const addRecurringTransactionModal = new bootstrap.Modal(document.getElementById('addRecurringTransactionModal'));
-      addRecurringTransactionModal.show();
-    }
-
-    // 保存新增的 recurring transaction
-    document.getElementById('saveRecurringTransaction').addEventListener('click', () => {
-      const day = document.getElementById('recurringDay').value;
-      const type = document.getElementById('recurringType').value;
-      const amount = document.getElementById('recurringAmount').value;
-
-      if (day && type && amount) {
-        const newTransaction = {
-          id: Date.now(), // 使用时间戳作为唯一 ID
-          day: parseInt(day),
-          type: type,
-          amount: parseFloat(amount)
-        };
-        recurringTransactions.push(newTransaction);
-        updateRecurringTransactionsTable(); // 更新表格
-        const addRecurringTransactionModal = bootstrap.Modal.getInstance(document.getElementById('addRecurringTransactionModal'));
-        addRecurringTransactionModal.hide();
-      }
     });
-
-    // 删除 recurring transaction
-    function deleteRecurringTransaction(id) {
-      recurringTransactions = recurringTransactions.filter(transaction => transaction.id !== id);
-      updateRecurringTransactionsTable(); // 更新表格
-    }
-
-    // 更新 recurring transactions 表格
-    function updateRecurringTransactionsTable() {
-      const tableBody = document.getElementById('recurring-transactions-table');
-      if (!tableBody) return;  // 若不存在則直接退出
-      tableBody.innerHTML = recurringTransactions.map(transaction => `
-        <tr>
-          <td>${transaction.day}</td>
-          <td>${transaction.type}</td>
-          <td>£${transaction.amount.toFixed(2)}</td>
-          <td>
-            <button class="btn btn-danger btn-sm" onclick="deleteRecurringTransaction(${transaction.id})">Delete</button>
-          </td>
-        </tr>
-      `).join('');
-    }
-
-    // 初始化页面时更新表格
-    document.addEventListener("DOMContentLoaded", () => {
-      updateRecurringTransactionsTable();
-    });
-
 
     document.getElementById('saveChanges').addEventListener('click', () => {
       if (currentEditIndex !== null) {
@@ -1833,7 +1777,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       
       console.log('Final categories structure:', window.categories);
-  }
+    }
 
     document.addEventListener("DOMContentLoaded", () => {
       initializeData();
@@ -1859,8 +1803,8 @@ document.addEventListener('DOMContentLoaded', function() {
       // Other general initialization
       updateBudgetTable();
       calculateRemainingBudget();
-    });
-    </script>
+    }); // Added missing closing brace
+  </script>
   
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
