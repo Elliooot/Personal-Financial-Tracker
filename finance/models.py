@@ -52,10 +52,10 @@ class Transaction(models.Model):
     date = models.DateField()
     description = models.TextField(blank=True, null=True)
     transaction_type = models.BooleanField(default=True)  # True for income, False for expense
-    saved_transaction = models.BooleanField(default=False)
+    is_saved = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.get_category_display()} - {self.amount} - {self.date}"
+        return f"{self.category()} - {self.amount} - {self.date}"
 
 class Budget(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)

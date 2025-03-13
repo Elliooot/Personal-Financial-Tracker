@@ -17,7 +17,7 @@ class Command(BaseCommand):
             { 'date': '2024/02/03', 'category': 'Food',           'transaction_type': 'Expense', 'currency': 'GBP', 'amount': '7.45', 'account': 'Cash', 'description': 'Subway'},
             { 'date': '2024/02/03', 'category': 'Shopping',       'transaction_type': 'Expense', 'currency': 'GBP', 'amount': '4.90', 'account': 'Card', 'description': 'Circuit top up'},
             { 'date': '2024/02/16', 'category': 'Food',           'transaction_type': 'Expense', 'currency': 'GBP', 'amount': '7.45', 'account': 'Cash', 'description': 'Subway'},
-            { 'date': '2024/02/20', 'category': 'Food',           'transaction_type': 'Expense', 'currency': 'GBP', 'amount': '7.45', 'account': 'Bank', 'description': 'Subway'}
+            { 'date': '2024/02/20', 'category': 'Food',           'transaction_type': 'Expense', 'currency': 'GBP', 'amount': '7.45', 'account': 'Bank', 'description': 'Subway'},
         ]
 
         # Ensure these default objects exist or create them as needed.
@@ -51,7 +51,7 @@ class Command(BaseCommand):
                 amount=amount_decimal,
                 description=data['description'],
                 transaction_type=transaction_type,
-                saved_transaction=False
+                is_saved=False
             )
             print(f"Inserted transaction: {data['description']}")
 
