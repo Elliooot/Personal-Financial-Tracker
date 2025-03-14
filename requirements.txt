@@ -16,7 +16,7 @@ matplotlib-inline==0.1.6
 nest-asyncio==1.5.6
 parso==0.8.3
 pickleshare==0.7.5
-pillow @ file:///C:/b/abs_b50vowcrzo/croot/pillow_1738010273782/work
+pillow==11.1.0
 platformdirs==3.5.3
 prompt-toolkit==3.0.38
 psutil==5.9.5
