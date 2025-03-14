@@ -1,0 +1,459 @@
+{% extends "base.html" %}
+{% block title %}Wallet Notes - Statistics{% endblock %}
+{% block active_statistics %}active{% endblock %}
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+
+<style>
+
+  .container {
+    margin-bottom: 10px;
+  }
+  
+  .btn {
+    font-size: 14px; 
+  }
+
+  .col-auto {
+    margin-right: -20px;
+  }
+  
+  .filter-btn {
+    background-color: #a5a5a5;  
+    color: white; 
+    border-radius: 5px; 
+  }
+  
+  .filter-btn:hover { 
+    background-color: #454545;  
+    color: white;  
+  }
+
+  .filter-btn.active {
+    background-color: #00bcd4 !important;
+    border-color: #00bcd4 !important;
+    color: white !important;
+  }
+  
+  .row {
+    display: flex;
+    flex-wrap: nowrap;  /* prevent line break */
+    overflow-x: auto;   /* allow horizontal scroll */
+  }
+  
+  .card-header {
+      padding: 0.3rem 1rem;   /* top and bottom margin; left and right margin (default is 1rem 1rem)*/
+      font-size: 1rem;
+  }
+  
+  .card {
+    /* margin-bottom: 10px; card bottom margin */
+    height: auto;  /* auto adjust card height based on content */
+  }
+  
+  .stat-item {
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    background-color: #00bcd4;
+    color: white;
+  }
+  
+  .stat-item span {
+    font-size: 14px;
+  }
+  
+  .stat-item h3 {
+    margin: 0;
+    font-size: 24px;
+  }
+  
+  canvas {
+    width: 100%;     
+    height: 100%;   
+  }
+  
+  .piechartcard-body {
+    display: flex;
+    flex-direction: column;  
+    justify-content: left; 
+    align-items: center;   
+    padding: 10px;
+  }
+    
+</style>  
+
+<div id="statistics-page">
+  <div class="container">
+    <div class="row justify-content-start align-items-center">
+      <!-- Year button -->
+      <div class="col-auto">
+        <button class="btn btn-sm filter-btn" onclick="switchMode('year')">By Year</button>
+      </div>
+  
+      <!-- Month button -->
+      <div class="col-auto">
+        <button class="btn btn-sm filter-btn" onclick="switchMode('month')">By Month</button>
+      </div>
+
+      <!-- Year dropdown -->
+      <div class="col-auto">
+        <select id="yearSelect" class="form-select form-select-sm w-auto d-inline-block">
+        </select>
+      </div>
+
+      <!-- Month dropdown -->
+      <div class="col-auto">
+        <select id="monthSelect" class="form-select form-select-sm w-auto d-inline-block">
+        </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- First Row -->
+  <div class="row mb-2 g-2">
+    <!-- Statistics Block -->
+    <div class="col-md-3">
+      <div class="card">
+        <div class="card-header">
+          Statistics
+        </div>
+        <div class="card-body">
+          <div class="stat-item in">
+            <span>In</span>
+            <h3>0.00 £</h3>
+          </div>
+          <div class="stat-item out">
+            <span>Out</span>
+            <h3>0.00 £</h3>
+          </div>
+          <div class="stat-item balance">
+            <span>Balance</span>
+            <h3>0.00 £</h3>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Budget Block -->
+    <div class="col-md-3">
+      <div class="card">
+        <div class="card-header">
+          Budget
+        </div>
+        <div class="card-body">
+          <canvas id="budgetChart" width="300" height="00"></canvas>
+          <script>
+            var budgetCtx = document.getElementById('budgetChart');
+            Chart.register(ChartDataLabels); // register ChartDataLabels plugin
+
+            var budgetChart = new Chart(budgetCtx, {
+              type: 'doughnut',
+              plugins: [ChartDataLabels],  // enable ChartDataLabels plugin
+
+              data: { // Budget pie chart info
+                labels: ["Used", "Remiaining"],
+                datasets: [{
+                  data: [12, 19],
+                  backgroundColor: ['#A8DFF1', '#ECBA73', '#F5E2D4', '#024757'], 
+                  datalabels: {
+                    color: '#FFCE56'
+                  }
+                }],
+              },
+
+              options: { // Budget pie chart design
+                responsive: true,
+                plugins: {
+                  legend: {
+                    position: 'bottom',  // set legend below pie chart
+                    labels: {
+                      boxWidth: 20,  // set color box width (default is 40)
+                    }
+                  },
+                  datalabels: { // [numbers on pie chart]
+                    anchor: 'center',
+                    align: 'center',
+                    formatter: (val, ctx) => {
+                      var total = ctx.dataset.data.reduce((acc, num) => acc + num, 0);
+                      var percentage = Math.round((val / total) * 100); // calculate percentage, round to integer
+                      return percentage + '%';
+                    },
+                    labels: {
+                      value: {
+                        color: 'black'
+                      }
+                    }
+                  }
+                }
+              }
+            });
+          </script>
+        </div>
+      </div>
+    </div>
+
+    <!-- Income and Expense Line Chart Block -->
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          Income and Expense
+        </div>
+        <div class="card-body">
+          <canvas id="incomeExpenseChart"></canvas>
+
+          <script>            
+            const incomeExpenseChart = new Chart("incomeExpenseChart", {
+              type: "line",
+              data: {
+                labels: [],
+                datasets: [{ 
+                  label: 'Expense',
+                  data: [],
+                  borderColor: "#A8DFF1",
+                  pointBackgroundColor: "#A8DFF1",
+                  fill: false
+                }, { 
+                  label: 'Income',
+                  data: [],
+                  borderColor: "#ECBA73",
+                  pointBackgroundColor: "#ECBA73",
+                  fill: false
+                }, { 
+                  label: 'Balance',
+                  data: [],
+                  borderColor: "#F5E2D4",
+                  pointBackgroundColor: "#F5E2D4",
+                  fill: false
+                }]
+              },
+              options: {
+                responsive: true,
+                plugins: {
+                  legend: {
+                    display: true,
+                    position: 'bottom',
+                    labels: {
+                      fontSize: 14,
+                      fontColor: '#000',
+                      boxWidth: 20
+                    }
+                  },
+                  datalabels: {
+                    display: false 
+                  }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: '#f0f0f0'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return value + ' £';
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                elements: {
+                  point: {
+                    radius: 5,
+                    hoverRadius: 8,
+                  },
+                  line: {
+                    tension: 0.1
+                  }
+                }
+              }
+            });
+          </script>
+            
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Second Row -->
+  <div class="row g-2">
+    <!-- Expense Block -->
+    <div class="col-lg-3 col-md-6">
+      <div class="card">
+        <div class="card-header">
+          Expense
+        </div>
+        <div class="piechartcard-body">
+          <canvas id="expensePieChart"></canvas>
+          <script>
+            const expenseCtx = document.getElementById('expensePieChart');
+            Chart.register(ChartDataLabels);
+  
+            const expenseChart = new Chart(expenseCtx, {
+              type: 'doughnut',
+              plugins: [ChartDataLabels],
+
+              data: {
+                labels: ['No Expense Data'],  
+                datasets: [{
+                  data: [1],  
+                  backgroundColor: ['#E0E0E0'],
+                  datalabels: {
+                    color: '#FFCE56'
+                  }
+                }]
+              },
+
+              options: {
+                responsive: true,
+                plugins: {
+                  legend: {
+                    position: 'bottom',
+                    labels: {
+                      boxWidth: 20
+                    }
+                  },
+                  datalabels: {
+                    anchor: 'center',
+                    align: 'center',
+                    formatter: (val, ctx) => {
+                      if (ctx.chart.data.labels[0] === 'No Expense Data') {
+                        return 'No Data';
+                      }
+                      var total = ctx.dataset.data.reduce((acc, num) => acc + num, 0);
+                      var percentage = Math.round((val / total) * 100);
+                      return percentage + '%';
+                    },
+                    labels: {
+                      value: {
+                        color: 'black'
+                      }
+                    }
+                  }
+                }
+              }
+            });
+          </script>
+        </div>
+      </div>
+    </div>
+
+    <!-- Income Block -->
+    <div class="col-lg-3 col-md-6">
+      <div class="card">
+        <div class="card-header">
+          Income
+        </div>
+        <div class="piechartcard-body">
+          <canvas id="incomePieChart"></canvas>
+          <script>
+            const incomeCtx = document.getElementById('incomePieChart');
+            Chart.register(ChartDataLabels);
+  
+            const incomeChart = new Chart(incomeCtx, {
+              type: 'doughnut',
+              plugins: [ChartDataLabels],
+
+              data: {
+                labels: ['No Income Data'],  
+                datasets: [{
+                  data: [1],  
+                  backgroundColor: ['#E0E0E0'],
+                  datalabels: {
+                    color: '#FFCE56'
+                  }
+                }]
+              },
+
+              options: {
+                responsive: true,
+                plugins: {
+                  legend: {
+                    position: 'bottom',
+                    labels: {
+                      boxWidth: 20
+                    }
+                  },
+                  datalabels: {
+                    anchor: 'center',
+                    align: 'center',
+                    formatter: (val, ctx) => {
+                      if (ctx.chart.data.labels[0] === 'No Income Data') {
+                        return 'No Data';
+                      }
+                      var total = ctx.dataset.data.reduce((acc, num) => acc + num, 0);
+                      var percentage = Math.round((val / total) * 100);
+                      return percentage + '%';
+                    },
+                    labels: {
+                      value: {
+                        color: 'black'
+                      }
+                    }
+                  }
+                }
+              }
+            });
+          </script>
+        </div>
+      </div>
+    </div>
+
+    <!-- Expense Ranking Block -->
+    <div class="col-lg-3 col-md-6">
+      <div class="card">
+        <div class="card-header">
+          Expense Ranking
+        </div>
+        <div class="card-body">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Category</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tbody id="expenseRankingTable">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>   
+    
+    <!-- Income Ranking Block -->
+    <div class="col-lg-3 col-md-6">
+      <div class="card">
+        <div class="card-header">
+          Income Ranking
+        </div>
+        <div class="card-body">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Category</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tbody id="incomeRankingTable">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>    
+  </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}

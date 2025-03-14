@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}Wallet Notes - Management{% endblock %}
+{% block active_management %}active{% endblock %}
+{% block content %}
+<div id="management-page">
+  <h3>Management</h3>
+  <ul class="nav nav-tabs">
+    <li class="nav-item">
+      <a class="nav-link active" data-bs-toggle="tab" href="#income-categories">Income Categories</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-bs-toggle="tab" href="#expense-categories">Expense Categories</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-bs-toggle="tab" href="#budget">Budget</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-bs-toggle="tab" href="#currency">Currency</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-bs-toggle="tab" href="#account">Account</a>
+  </ul>
+  
+  <div class="tab-content mt-3">
+    <!-- Income Categories -->
+    <div class="tab-pane fade show active" id="income-categories">
+      <button class="btn btn-primary mb-3" onclick="openAddIncomeCategoryModal()">Add Income Category</button>
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Transactions Count</th>
+            <th>Total Amount</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="income-categories-table">
+          {% for c in income_categories %}
+          <tr>
+            <td>{{ c.name }}</td>
+            <td>{{ c.transaction_count }}</td>
+            <td>£{{ c.total_amount|default:"0.00"|floatformat:2 }}</td>
+            <td>
+              <button class='btn btn-danger btn-sm' onclick="deleteCategory('true', ${cat.id})">Delete</button>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="text-center">No income categories available</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    
+    <!-- Expense Categories -->
+    <div class="tab-pane fade" id="expense-categories">
+      <button class="btn btn-primary mb-3" onclick="openAddExpenseCategoryModal()">Add Expense Category</button>
+      <table class="table table-bordered">
+        <thead>
+      <tr>
+        <th>Name</th>
+        <th>Transactions Count</th>
+        <th>Total Amount</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="expense-categories-table">
+      {% for c in expense_categories %}
+      <tr>
+        <td>{{ c.name }}</td>
+        <td>{{ c.transaction_count }}</td>
+        <td>£{{ c.total_amount|default:"0.00"|floatformat:2 }}</td>
+        <td>
+          <button class="btn btn-danger btn-sm" onclick="deleteCategory('false', ${cat.id})">Delete</button>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="text-center">No expense categories available</td></tr>
+      {% endfor %}
+    </tbody>
+      </table>
+    </div>
+    
+    <!-- Budget -->
+    <div class="tab-pane fade" id="budget">
+      <button class="btn btn-primary mb-3" onclick="openAddBudgetModal()">Add Budget</button>
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>Year-Month</th>
+            <th>Category</th>
+            <th>Budget Amount</th>
+            <th>Remaining Amount</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="budget-table">
+          <tr><td colspan="5" class="text-center">Loading budgets...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Currency -->
+    <div class="tab-pane fade" id="currency">
+      <button class="btn btn-primary mb-3" onclick="openAddCurrencyModal()">Add Currency</button>
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>Currency</th>
+            <th>Exchange Rate</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="currency-table"></tbody>
+      </table>
+    </div>
+
+    <!-- Account -->
+    <div class="tab-pane fade" id="account">
+      <button class="btn btn-primary mb-3" onclick="openAddAccountModal()">Add Account</button>
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Balance</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="account-table"></tbody>
+      </table>
+    </div>
+  </div>
+  <div style="display: none;">
+    <h4>Debug Info:</h4>
+    <pre id="debug-categories-json">{{ categories_json }}</pre>
+  </div>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+  // 直接設置類別數據
+  window.categories = {{ categories_json|safe }};
+  
+  console.log('Directly set categories:', window.categories);
+  console.log('Debug raw JSON:', document.getElementById('debug-categories-json').textContent);
+  
+  // 確保初始化後更新表格
+  document.addEventListener('DOMContentLoaded', function() {
+    if (window.loadBudgets) {
+      loadBudgets();
+    } else {
+      console.error('loadBudgets function not found');
+    }
+
+    if (window.updateCategoryTables) {
+      updateCategoryTables();
+    } else {
+      console.error('updateCategoryTables function not found');
+    }
+  });
+</script>
+{% endblock %}

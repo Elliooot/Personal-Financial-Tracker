@@ -16,10 +16,16 @@ class User(AbstractUser):
         help_text='Specific permissions for this user.',
         verbose_name='user permissions',
     )
+
+    def __str__(self) -> str:
+        return self.username
     
 class Currency(models.Model):
     currency_code = models.CharField(max_length=10, unique=True)
     exchange_rate = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self) -> str:
+        return self.currency_code
 
 class Account(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -27,41 +33,29 @@ class Account(models.Model):
     account_type = models.CharField(max_length=50)
     balance = models.DecimalField(max_digits=15, decimal_places=2)
 
+    def __str__(self) -> str:
+        return self.account_name
+
 class Category(models.Model):
     name = models.CharField(max_length=255)
+    is_income = models.BooleanField(default=False)
+
+    def __str__(self) -> str:
+        return self.name
 
 class Transaction(models.Model):
-    CATEGORY_CHOICES = [
-        ('food', 'Food'),
-        ('shopping', 'Shopping'),
-        ('transportation', 'Transportation'),
-        ('education', 'Education'),
-        ('entertainment', 'Entertainment'),
-        ('housing', 'Housing'),
-        ('medical', 'Medical'),
-        ('investment', 'Investment'),
-        ('others', 'Others'),
-    ]
-
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    account = models.ForeignKey('Account', on_delete=models.CASCADE)
+    account = models.ForeignKey(Account, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE)
     currency = models.ForeignKey(Currency, on_delete=models.CASCADE)
     date = models.DateField()
-    description = models.TextField()
+    description = models.TextField(blank=True, null=True)
     transaction_type = models.BooleanField(default=True)  # True for income, False for expense
-    is_recurring = models.BooleanField(default=False)
-    saved_transaction = models.BooleanField(default=False)
-
+    is_saved = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.category} - {self.amount}"
-
-    
-class RecurringTransaction(models.Model):
-    transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE)
-    recurring_period = models.CharField(max_length=50)
+        return f"{self.category()} - {self.amount} - {self.date}"
 
 class Budget(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -69,7 +63,5 @@ class Budget(models.Model):
     budget_amount = models.DecimalField(max_digits=15, decimal_places=2)
     period = models.DateField()
 
-class Reminder(models.Model):
-    recurring_transaction = models.ForeignKey(RecurringTransaction, on_delete=models.CASCADE)
-    due_date = models.DateField()
-    status = models.BooleanField(default=False)
+    def __str__(self) -> str:
+        return self.budget_amount
