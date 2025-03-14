@@ -63,5 +63,5 @@ class Budget(models.Model):
     budget_amount = models.DecimalField(max_digits=15, decimal_places=2)
     period = models.DateField()
 
-    def __str__(self) -> str:
-        return self.budget_amount
+    def __str__(self):
+        return f"{self.period} - {self.category} - {self.budget_amount}"

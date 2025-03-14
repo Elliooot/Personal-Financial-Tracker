@@ -27,6 +27,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['0.0.0.0', '127.0.0.1', '.localhost', 'personal-finance-tracker-c2bhaad7ecevbtes.ukwest-01.azurewebsites.net']
 
+CSRF_TRUSTED_ORIGINS = ['https://personal-finance-tracker-c2bhaad7ecevbtes.ukwest-01.azurewebsites.net']
 
 # Application definition
 
