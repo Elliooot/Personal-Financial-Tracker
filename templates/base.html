@@ -440,25 +440,17 @@
       const filteredData = getFilteredTransactions();
       refreshTables();
     }
-    
-    function setTransactionTypeFilter(type) {
+
+    function filterTransactions(type) {
       updateFilterState('transactionType', type);
     }
 
-    function setCategoryFilter(){
+    function filterCategory() {
       const filterEl = document.getElementById('category-filter');
       if (!filterEl) return;
 
       const selectedCategory = filterEl.value;
       updateFilterState('category', selectedCategory);
-    }
-
-    function filterTransactions(type) {
-      setTransactionTypeFilter(type);
-    }
-
-    function filterCategory() {
-      setCategoryFilter();
     }
 
     function refreshTables() {
@@ -1867,6 +1859,28 @@ function updatePieChart(chart, data, type) {
 
     document.addEventListener("DOMContentLoaded", () => {
       initializeData();
+
+      const tabLinks = document.querySelectorAll('a[data-bs-toggle="tab"]');
+  
+      tabLinks.forEach(tab => {
+        tab.addEventListener('shown.bs.tab', function(event) {
+          if (event.target.getAttribute('href') === '#by-month' || event.target.getAttribute('href') === '#by-saved') {
+            currentFilterState.category = 'all';
+            currentFilterState.transactionType = 'all';
+            
+            document.querySelectorAll('.btn-secondary, .btn-success, .btn-danger').forEach(btn => {
+              btn.classList.remove('active');
+            });
+            document.querySelector('.btn-secondary').classList.add('active');
+            
+            if (document.getElementById('category-filter')) {
+              document.getElementById('category-filter').value = 'all';
+            }
+            
+            refreshTables();
+          }
+        });
+      });
 
       if(document.getElementById('detail-page')){
         refreshTables();
