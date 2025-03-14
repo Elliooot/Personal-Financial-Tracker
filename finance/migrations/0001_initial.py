@@ -104,7 +104,7 @@ class Migration(migrations.Migration):
                 ('description', models.TextField()),
                 ('transaction_type', models.BooleanField(default=True)),
                 ('is_recurring', models.BooleanField(default=False)),
-                ('saved_transaction', models.BooleanField(default=False)),
+                ('is_saved', models.BooleanField(default=False)),
                 ('account', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='finance.account')),
                 ('currency', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='finance.currency')),
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),

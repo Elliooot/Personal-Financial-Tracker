@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-6qbg#(up3qc%)r-($&npvm#xe-hfm1e_qr3mdm_(*_$%i_dezt
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["personal-finance-tracker-c2bhaad7ecevbtes.ukwest-01.azurewebsites.net"]
 
 
 # Application definition
