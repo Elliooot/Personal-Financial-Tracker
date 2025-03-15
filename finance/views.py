@@ -12,8 +12,7 @@ from django.contrib.auth import authenticate, login as auth_login, logout
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.decorators import login_required
 import traceback
-
-
+import calendar
 
 def register(request):
     if request.method == 'POST':
@@ -579,63 +578,59 @@ def get_transaction_dates(request):
         'monthsByYear': months_by_year
     })
 
-
-
-
-def user_instruction(request):
-    return render(request, 'user_instruction.html')
-
 def get_statistics_data(request):
     try:
         year = request.GET.get('year')
         month = request.GET.get('month')
         mode = request.GET.get('mode', 'year')
 
-        print(f"Debug - Received request params: year={year}, month={month}, mode={mode}")
-
-        if year:
-            year_transactions = Transaction.objects.filter(date__year=year)
-        else:
-            year_transactions = Transaction.objects.all()
-            
-        monthly_data = {}
-        for i in range(1, 13):
-            monthly_data[i] = {
-                'income': 0,
-                'expense': 0
-            }
-
+        # initialize data structure
+        monthly_data = {str(i): {'income': 0, 'expense': 0} for i in range(1, 13)}
+        daily_data = {}
         expense_by_category = {}
         income_by_category = {}
-
-
-        # calculate data based on selected month or year
-        if mode == 'month' and month:
-            transactions = year_transactions.filter(date__month=month)
-        else:
-            transactions = year_transactions
-
         total_income = 0
         total_expense = 0
 
-        # deal with transaction records
+        try:
+            base_query = Transaction.objects.filter(date__year=year)
+        except Exception:
+            base_query = Transaction.objects.none()
+
+        # handle monthly view
+        if mode == 'month' and month:
+            year_int = int(year)
+            month_int = int(month)
+            days_in_month = calendar.monthrange(year_int, month_int)[1]
+            daily_data = {str(i): {'income': 0, 'expense': 0} for i in range(1, days_in_month + 1)}
+            transactions = base_query.filter(date__month=month_int)
+        else:
+            transactions = base_query
+
+        # handle transactions
         for transaction in transactions:
             try:
-                month_num = transaction.date.month
                 amount = abs(float(transaction.amount))
-                category = transaction.get_category_display()
-                                
+                month_num = str(transaction.date.month)
+                day_num = str(transaction.date.day)
+                category = transaction.category.name if transaction.category else 'Uncategorized'
+
                 if transaction.transaction_type:  # Income
                     monthly_data[month_num]['income'] += amount
                     total_income += amount
                     income_by_category[category] = income_by_category.get(category, 0) + amount
+                    
+                    if mode == 'month' and month and day_num in daily_data:
+                        daily_data[day_num]['income'] += amount
                 else:  # Expense
                     monthly_data[month_num]['expense'] += amount
                     total_expense += amount
                     expense_by_category[category] = expense_by_category.get(category, 0) + amount
-                
-            except Exception as e:
-                print(f"Error processing transaction: {str(e)}")
+                    
+                    # handle daily expense data
+                    if mode == 'month' and month and day_num in daily_data:
+                        daily_data[day_num]['expense'] += amount
+            except Exception:
                 continue
 
         response_data = {
@@ -647,13 +642,14 @@ def get_statistics_data(request):
             'income_by_category': income_by_category
         }
 
-        print(f"Debug - Sending response: {response_data}")
+        if mode == 'month' and month:
+            response_data['daily_data'] = daily_data
+
         return JsonResponse(response_data)
 
     except Exception as e:
-        print(f"Error in get_statistics_data: {str(e)}")
-        print(traceback.format_exc())
-        return JsonResponse({
-            'error': str(e),
-            'detail': traceback.format_exc()
-        }, status=500)
+        return JsonResponse({'error': str(e)}, status=500)
+    
+
+def user_instruction(request):
+    return render(request, 'user_instruction.html')
