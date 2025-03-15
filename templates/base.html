@@ -662,7 +662,7 @@
         window.monthsByYear = data.monthsByYear; 
         initYearOptions(data.years);
       initMonthOptions(data.monthsByYear[Math.max(...data.years)]);  // init month options for the latest year
-      switchMode('year');
+      switchMode('month');
     })
     .catch(error => {
       console.error('Error fetching transaction dates:', error);
@@ -852,6 +852,42 @@ function updateLineChart(data, mode) {
   incomeExpenseChart.update();
 }
 
+function updateBudgetChart(chart, data) {
+  try {
+    const budgetData = data.budget_data;
+    
+    if (!budgetData) {
+      chart.data.labels = ['No Data'];
+      chart.data.datasets[0].data = [1];
+      chart.data.datasets[0].backgroundColor = ['#E0E0E0'];
+      chart.update();
+      return;
+    }
+    
+    // get budget data
+    const usedAmount = budgetData.used_budget || 0;
+    const totalAmount = budgetData.total_budget || 0;
+    const remainingAmount = totalAmount - usedAmount;
+        
+    if (totalAmount !== 0) {
+      // update budget pie chart
+      chart.data.labels = ['Used', 'Remaining'];
+      chart.data.datasets[0].data = [usedAmount, remainingAmount];
+      chart.data.datasets[0].backgroundColor = ['#A8DFF1', '#ECBA73'];
+    } else {
+      // no data
+      chart.data.labels = ['No Budget Data'];
+      chart.data.datasets[0].data = [1];
+      chart.data.datasets[0].backgroundColor = ['#E0E0E0'];
+      chart.data.datasets[0].datalabels.color = '#FFCE56';
+    }
+    
+    chart.update();
+  } catch (error) {
+    console.error('Error in updateBudgetChart:', error);
+  }
+}
+
 function updatePieChart(chart, data, type) {
   const categoryData = data[`${type}_by_category`];
   if (categoryData && Object.keys(categoryData).length > 0) {
@@ -948,6 +984,8 @@ function updatePieChart(chart, data, type) {
         }
       }
 
+      //update budget pie chart
+      updateBudgetChart(budgetChart, data)
       // update line chart
       updateLineChart(data, mode);
       // update pie charts

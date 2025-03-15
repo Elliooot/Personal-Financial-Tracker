@@ -591,6 +591,7 @@ def get_statistics_data(request):
         income_by_category = {}
         total_income = 0
         total_expense = 0
+        total_budget = 0
 
         try:
             base_query = Transaction.objects.filter(date__year=year)
@@ -604,8 +605,17 @@ def get_statistics_data(request):
             days_in_month = calendar.monthrange(year_int, month_int)[1]
             daily_data = {str(i): {'income': 0, 'expense': 0} for i in range(1, days_in_month + 1)}
             transactions = base_query.filter(date__month=month_int)
+            # handle budget data
+            budgets = Budget.objects.filter(
+                period__year=int(year),
+                period__month=int(month)
+            )
+            total_budget = sum(float(b.budget_amount) for b in budgets)
         else:
             transactions = base_query
+            # handle budget data
+            budgets = Budget.objects.filter(period__year=int(year))
+            total_budget = sum(float(b.budget_amount) for b in budgets)
 
         # handle transactions
         for transaction in transactions:
@@ -639,7 +649,11 @@ def get_statistics_data(request):
             'balance': float(total_income - total_expense),
             'monthly_data': monthly_data,
             'expense_by_category': expense_by_category,
-            'income_by_category': income_by_category
+            'income_by_category': income_by_category,
+            'budget_data': {
+                'total_budget': total_budget,
+                'used_budget': float(total_expense),
+            }
         }
 
         if mode == 'month' and month:
