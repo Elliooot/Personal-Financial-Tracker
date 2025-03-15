@@ -79,7 +79,7 @@ def detail_view(request):
             'description': t.description,
             'transaction_type': t.transaction_type,
             'currency': t.currency.currency_code,
-            'account': t.account.account_name,
+            'account_name': t.account.account_name,
             'is_saved': t.is_saved
         } for t in transactions
     ]

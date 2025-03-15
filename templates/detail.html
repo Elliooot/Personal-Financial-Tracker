@@ -45,11 +45,13 @@
             <td>{{ t.category }}</td>
             <td>{{ t.transaction_type }}</td>
             <td>{{ t.currency }}</td>
-            <td>{{ t.account }}</td>
+            <td>{{ t.account_name }}</td>
             <td>{{ t.amount }}</td>
             <td>{{ t.description }}</td>
             <td>
-              <button class="btn btn-success btn-sm" onclick="saveTransaction({{ forloop.counter0 }})">Save</button>
+              <button class='btn ${t.is_saved ? "btn-secondary" : "btn-success"} btn-sm' onclick="toggleSaveTransaction(${index}, ${isSavedView ? 'true' : 'false'})">
+                  ${t.is_saved ? "Unsave" : "Save"}
+              </button>
             <td>
               <button class='btn btn-warning btn-sm' onclick="openEditModal({{ forloop.counter0 }})">Edit</button>
               <button class="btn btn-danger btn-sm" onclick="deleteTransaction({{ forloop.counter0 }})">Delete</button>
@@ -96,10 +98,12 @@
             <td>{{ t.transaction_type }}</td>
             <td>{{ t.currency }}</td>
             <td>{{ t.amount }}</td>
-            <td>{{ t.account }}</td>
+            <td>{{ t.account_name }}</td>
             <td>{{ t.description }}</td>
             <td>
-              <button class="btn btn-success btn-sm" onclick="saveTransaction({{ forloop.counter0 }})">Save</button>
+              <button class='btn ${t.is_saved ? "btn-secondary" : "btn-success"} btn-sm' onclick="toggleSaveTransaction(${index})">
+                  ${t.is_saved ? "Unsave" : "Save"}
+              </button>
             <td>
               <button class='btn btn-warning btn-sm' onclick="openEditModal({{ forloop.counter0 }})">Edit</button>
               <button class="btn btn-danger btn-sm" onclick="deleteTransaction({{ forloop.counter0 }})">Delete</button>
