@@ -55,7 +55,7 @@ class Transaction(models.Model):
     saved_transaction = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.category} - {self.amount} - {self.date}"
+        return f"{self.get_category_display()} - {self.amount} - {self.date}"
 
 class Budget(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
