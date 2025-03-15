@@ -133,10 +133,10 @@
             <div class="mb-3">
               <label for="editAccount" class="form-label">Account</label>
               <select class="form-select" id="editAccount">
-                <option value="cash">Cash</option>
-                <option value="bank">Bank Account</option>
-                <option value="credit_card">Credit Card</option>
-                <option value="debit_card">Debit Card</option>
+                <option value="Cash">Cash</option>
+                <option value="Bank">Bank Account</option>
+                <option value="Credit Card">Credit Card</option>
+                <option value="Debit Card">Debit Card</option>
               </select>
             </div>
             <div class="mb-3">
@@ -367,10 +367,10 @@
             <div class="mb-3">
               <label for="addAccount" class="form-label">Account</label>
               <select class="form-select" id="addAccount">
-                <option value="cash">Cash</option>
-                <option value="bank">Bank Account</option>
-                <option value="credit_card">Credit Card</option>
-                <option value="debit_card">Debit Card</option>
+                <option value="Cash">Cash</option>
+                <option value="Bank">Bank Account</option>
+                <option value="Credit Card">Credit Card</option>
+                <option value="Debit Card">Debit Card</option>
               </select>
             </div>
             <div class="mb-3">
@@ -1705,10 +1705,12 @@ function updatePieChart(chart, data, type) {
       accountTable.innerHTML = '';
       
       window.accounts.forEach(account => {
+        const accountType = account.account_type.charAt(0).toUpperCase() + account.account_type.slice(1);
+
         const row = document.createElement('tr');
         row.innerHTML = `
           <td>${account.account_name}</td>
-          <td>${account.account_type}</td>
+          <td>${accountType}</td>
           <td>${account.balance}</td>
           <td>
             <button class="btn btn-danger btn-sm" onclick="deleteAccount(${account.id})">Delete</button>
