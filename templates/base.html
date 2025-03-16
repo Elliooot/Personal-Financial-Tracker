@@ -7,6 +7,7 @@
   <meta name="add-transaction-url" content="{% url 'add_transaction' %}">
   <meta name="delete-transaction-url" content="{% url 'delete_transaction' %}">
   <meta name="update-transaction-url" content="{% url 'update_transaction' %}">
+  <meta name="toggle-save-transaction-url" content="{% url 'toggle_save_transaction' %}">
   <meta name="add-category-url" content="{% url 'add_category' %}">
   <meta name="delete-category-url" content="{% url 'delete_category' %}">
   <meta name="add-budget-url" content="{% url 'add_budget' %}">
@@ -493,7 +494,14 @@
             return;
         }
 
-        let tableContent = data.map((t, index) => `<tr>
+        const isSavedView = tableId === "transaction-table-saved";
+        
+        let displayData = data;
+        if (isSavedView) {
+            displayData = data.filter(t => t.is_saved === true);
+        }
+
+        let tableContent = displayData.map((t, index) => `<tr>
             <td>${t.date}</td>
             <td>${t.category}</td>
             <td>${t.transaction_type ? "Income" : "Expense"}</td>
@@ -502,14 +510,92 @@
             <td>${t.account}</td>
             <td>${t.description}</td>
             <td>
-                <button class='btn btn-success btn-sm' onclick="saveTransaction(${index})">Save</button>
+                <button class='btn ${t.is_saved ? "btn-secondary" : "btn-success"} btn-sm' onclick="toggleSaveTransaction(${index}, ${isSavedView})">
+                    ${t.is_saved ? "Unsave" : "Save"}
+                </button>
             </td>
             <td>
                 <button class='btn btn-warning btn-sm' onclick="openEditModal(${index})">Edit</button>
                 <button class='btn btn-danger btn-sm' onclick="deleteTransaction(${index})">Delete</button>
             </td>
         </tr>`).join('');
-        document.getElementById(tableId).innerHTML = tableContent || '<tr><td colspan="9" class="text-center">No data available</td></tr>';
+        // document.getElementById(tableId).innerHTML = tableContent || '<tr><td colspan="9" class="text-center">No data available</td></tr>';
+        tableElement.innerHTML = tableContent || '<tr><td colspan="9" class="text-center">No data available</td></tr>';
+    }
+
+    function findOriginalIndex(transactionId) {
+        return window.transactions.findIndex(t => t.id === transactionId);
+    }
+
+    function isInSavedTab() {
+        return document.querySelector('#by-saved.active, #by-saved.show.active') !== null;
+    }
+
+    function toggleSaveTransaction(index, fromSavedView = false) {
+        let transaction;
+        let originalIndex;
+        
+        if (fromSavedView) {
+            const savedTransactions = getFilteredTransactions().filter(t => t.is_saved);
+            if (index >= savedTransactions.length) {
+                console.error('Invalid index for saved transactions');
+                return;
+            }
+            transaction = savedTransactions[index];
+            originalIndex = window.transactions.findIndex(t => t.id === transaction.id);
+            if (originalIndex === -1) {
+                console.error('Transaction not found in original array');
+                return;
+            }
+        } else {
+            transaction = window.transactions[index];
+            originalIndex = index;
+        }
+
+        if (!transaction || !transaction.id) {
+            console.error('Invalid transaction or missing ID');
+            return;
+        }
+
+        const transactionId = transaction.id;
+        const currentSavedState = transaction.is_saved;
+
+        console.log(`Toggling transaction ${transactionId} with current saved state: ${currentSavedState}`);
+        console.log(`Operating from saved view: ${fromSavedView}`);
+        
+        let saveUrl = 'toggle-save-transaction/';
+        const urlMeta = document.querySelector('meta[name="toggle-save-transaction-url"]');
+        if (urlMeta) {
+            saveUrl = urlMeta.getAttribute('content');
+        }
+        
+        fetch(saveUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `transaction_id=${transactionId}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                window.transactions[originalIndex].is_saved = data.is_saved;
+                                
+                if (fromSavedView && !data.is_saved) {
+                    console.log('Removing transaction from saved tab');
+                } else {
+                    console.log(`Transaction ${data.is_saved ? 'saved' : 'unsaved'} successfully`);
+                }
+                refreshTables();
+            } else {
+                console.error('Failed to toggle save status:', data.message);
+                alert(`Failed to update: ${data.message}`);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while updating the transaction');
+        });
     }
 
     function openAddModal() {

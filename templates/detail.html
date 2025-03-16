@@ -132,25 +132,7 @@
           </tr>
         </thead>
         <tbody id="transaction-table-saved">
-          {% for t in transactions %}
-          <tr>
-            <td>{{ t.date }}</td>
-            <td>{{ t.category }}</td>
-            <td>{{ t.transaction_type }}</td>
-            <td>{{ t.currency }}</td>
-            <td>{{ t.amount }}</td>
-            <td>{{ t.account }}</td>
-            <td>{{ t.description }}</td>
-            <td>
-              <button class="btn btn-success btn-sm" onclick="saveTransaction({{ forloop.counter0 }})">Save</button>
-            <td>
-              <button class='btn btn-warning btn-sm' onclick="openEditModal({{ forloop.counter0 }})">Edit</button>
-              <button class="btn btn-danger btn-sm" onclick="deleteTransaction({{ forloop.counter0 }})">Delete</button>
-            </td>
-          </tr>
-          {% empty %}
           <tr><td colspan="9" class="text-center">No transactions available</td></tr>
-          {% endfor %}
         </tbody>
       </table>
     </div>

@@ -79,7 +79,8 @@ def detail_view(request):
             'description': t.description,
             'transaction_type': t.transaction_type,
             'currency': t.currency.currency_code,
-            'account': t.account.account_name
+            'account': t.account.account_name,
+            'is_saved': t.is_saved
         } for t in transactions
     ]
 
@@ -223,6 +224,31 @@ def update_transaction_view(request):
         return JsonResponse({'status': 'error', 'message': 'Transaction not found'}, status=404)
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    
+@csrf_exempt
+def toggle_save_transaction(request):
+    try:
+        transaction_id = request.POST.get('transaction_id')
+        
+        if not transaction_id:
+            return JsonResponse({'status': 'error', 'message': 'Transaction ID is required'}, status=400)
+            
+        transaction = Transaction.objects.get(id=transaction_id)
+        
+        transaction.is_saved = not transaction.is_saved
+        transaction.save()
+        
+        return JsonResponse({
+            'status': 'success', 
+            'is_saved': transaction.is_saved,
+            'message': 'Transaction saved status updated'
+        })
+        
+    except Transaction.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Transaction not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    
 
     
 def statistics_view(request):
