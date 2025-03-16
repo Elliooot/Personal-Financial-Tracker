@@ -10,6 +10,9 @@
 
   .container {
     margin-bottom: 10px;
+    margin-left: 0;
+    padding-left: 10;
+    max-width: 100%;
   }
   
   .btn {
@@ -17,7 +20,7 @@
   }
 
   .col-auto {
-    margin-right: -20px;
+    padding-left: 0px;
   }
   
   .filter-btn {
@@ -82,20 +85,25 @@
     align-items: center;   
     padding: 10px;
   }
+
+  #categorySelect {
+    height: 25px;
+    font-size: 10px;
+  }
     
 </style>  
 
 <div id="statistics-page">
   <div class="container">
     <div class="row justify-content-start align-items-center">
-      <!-- Year button -->
-      <div class="col-auto">
-        <button class="btn btn-sm filter-btn" onclick="switchMode('year')">By Year</button>
-      </div>
-  
       <!-- Month button -->
       <div class="col-auto">
         <button class="btn btn-sm filter-btn" onclick="switchMode('month')">By Month</button>
+      </div>
+
+      <!-- Year button -->
+      <div class="col-auto">
+        <button class="btn btn-sm filter-btn" onclick="switchMode('year')">By Year</button>
       </div>
 
       <!-- Year dropdown -->
@@ -119,7 +127,7 @@
     <div class="col-md-3">
       <div class="card">
         <div class="card-header">
-          Statistics
+          Financial Overview
         </div>
         <div class="card-body">
           <div class="stat-item in">
@@ -141,28 +149,34 @@
     <!-- Budget Block -->
     <div class="col-md-3">
       <div class="card">
-        <div class="card-header">
-          Budget
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span>Budget</span>
+          <div class="dropdown">
+            <select id="categorySelect" class="form-select form-select-sm w-auto d-inline-block">
+              Select Category
+            </select>
+            </ul>
+          </div>
         </div>
         <div class="card-body">
-          <canvas id="budgetChart" width="300" height="00"></canvas>
+          <canvas id="budgetChart" width="300" height="300"></canvas>
           <script>
-            var budgetCtx = document.getElementById('budgetChart');
+            const budgetCtx = document.getElementById('budgetChart');
             Chart.register(ChartDataLabels); // register ChartDataLabels plugin
 
-            var budgetChart = new Chart(budgetCtx, {
+            const budgetChart = new Chart(budgetCtx, {
               type: 'doughnut',
               plugins: [ChartDataLabels],  // enable ChartDataLabels plugin
 
               data: { // Budget pie chart info
-                labels: ["Used", "Remiaining"],
+                labels: ['No Budget Data'],  
                 datasets: [{
-                  data: [12, 19],
-                  backgroundColor: ['#A8DFF1', '#ECBA73', '#F5E2D4', '#024757'], 
+                  data: [1],  
+                  backgroundColor: ['#E0E0E0'],
                   datalabels: {
                     color: '#FFCE56'
                   }
-                }],
+                }]
               },
 
               options: { // Budget pie chart design
@@ -178,6 +192,9 @@
                     anchor: 'center',
                     align: 'center',
                     formatter: (val, ctx) => {
+                      if (ctx.chart.data.labels[0] === 'No Budget Data') {
+                        return 'No Data';
+                      }
                       var total = ctx.dataset.data.reduce((acc, num) => acc + num, 0);
                       var percentage = Math.round((val / total) * 100); // calculate percentage, round to integer
                       return percentage + '%';
@@ -284,7 +301,7 @@
 
   <!-- Second Row -->
   <div class="row g-2">
-    <!-- Expense Block -->
+    <!-- Expense Pie Chart Block -->
     <div class="col-lg-3 col-md-6">
       <div class="card">
         <div class="card-header">
@@ -345,7 +362,7 @@
       </div>
     </div>
 
-    <!-- Income Block -->
+    <!-- Income Pie Chart Block -->
     <div class="col-lg-3 col-md-6">
       <div class="card">
         <div class="card-header">

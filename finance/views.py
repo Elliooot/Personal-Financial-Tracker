@@ -11,8 +11,7 @@ from django.contrib.auth import authenticate, login as auth_login, logout
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.decorators import login_required
 import traceback
-
-
+import calendar
 
 def register(request):
     if request.method == 'POST':
@@ -292,12 +291,130 @@ def toggle_save_transaction(request):
         return JsonResponse({'status': 'error', 'message': 'Transaction not found'}, status=404)
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-    
-
-    
+     
+@login_required
 def statistics_view(request):
-
     return render(request, 'statistics.html', {})
+
+def get_transaction_dates(request):
+    # Get Year and Month from Transactions
+    transactions = Transaction.objects.all()
+    
+    months_by_year = {}
+    years = set()
+    
+    for transaction in transactions:
+        year = transaction.date.year
+        month = transaction.date.month
+        years.add(year)
+        
+        if year not in months_by_year:
+            months_by_year[year] = set()
+        months_by_year[year].add(month)
+    
+    years_list = sorted(list(years), reverse=True)
+    months_by_year = {
+        year: sorted(list(months)) 
+        for year, months in months_by_year.items()
+    }
+    
+    return JsonResponse({
+        'years': years_list,
+        'monthsByYear': months_by_year
+    })
+
+def get_statistics_data(request):
+    try:
+        year = request.GET.get('year')
+        month = request.GET.get('month')
+        mode = request.GET.get('mode', 'year')
+
+        # initialize data structure
+        monthly_data = {str(i): {'income': 0, 'expense': 0} for i in range(1, 13)}
+        daily_data = {}
+        expense_by_category = {}
+        income_by_category = {}
+        category_budgets = {}
+        total_income = 0
+        total_expense = 0
+        total_budget = 0
+
+        try:
+            base_query = Transaction.objects.filter(date__year=year)
+        except Exception:
+            base_query = Transaction.objects.none()
+
+        # handle monthly view
+        if mode == 'month' and month:
+            year_int = int(year)
+            month_int = int(month)
+            days_in_month = calendar.monthrange(year_int, month_int)[1]
+            daily_data = {str(i): {'income': 0, 'expense': 0} for i in range(1, days_in_month + 1)}
+            transactions = base_query.filter(date__month=month_int)
+            # handle budget data
+            budgets = Budget.objects.filter(
+                period__year=int(year),
+                period__month=int(month)
+            )
+            total_budget = sum(float(b.budget_amount) for b in budgets)
+        else:
+            transactions = base_query
+            # handle budget data
+            budgets = Budget.objects.filter(period__year=int(year))
+            total_budget = sum(float(b.budget_amount) for b in budgets)
+
+        # handle transactions
+        for transaction in transactions:
+            try:
+                amount = abs(float(transaction.amount))
+                month_num = str(transaction.date.month)
+                day_num = str(transaction.date.day)
+                category = transaction.category.name if transaction.category else 'Uncategorized'
+
+                if transaction.transaction_type:  # Income
+                    monthly_data[month_num]['income'] += amount
+                    total_income += amount
+                    income_by_category[category] = income_by_category.get(category, 0) + amount
+                    
+                    if mode == 'month' and month and day_num in daily_data:
+                        daily_data[day_num]['income'] += amount
+                else:  # Expense
+                    monthly_data[month_num]['expense'] += amount
+                    total_expense += amount
+                    expense_by_category[category] = expense_by_category.get(category, 0) + amount
+                    
+                    # handle daily expense data
+                    if mode == 'month' and month and day_num in daily_data:
+                        daily_data[day_num]['expense'] += amount
+            except Exception:
+                continue
+
+        # handle category budgets
+        for budget in budgets:
+            category_name = budget.category.name
+            category_budgets[category_name] = category_budgets.get(category_name, 0) + float(budget.budget_amount)
+
+        response_data = {
+            'income': float(total_income),
+            'expense': float(total_expense),
+            'balance': float(total_income - total_expense),
+            'monthly_data': monthly_data,
+            'expense_by_category': expense_by_category,
+            'income_by_category': income_by_category,
+            'budget_data': {
+                'total_budget': total_budget,
+                'used_budget': float(total_expense),
+                'category_budgets': category_budgets
+            }
+        }
+
+        if mode == 'month' and month:
+            response_data['daily_data'] = daily_data
+
+        return JsonResponse(response_data)
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 def management_view(request):
     # 獲取所有類別對象並計算交易數量和金額總和
@@ -745,3 +862,23 @@ def get_statistics_data(request):
             'error': str(e),
             'detail': traceback.format_exc()
         }, status=500)
+    
+@login_required
+def user_instruction(request):
+    return render(request, 'user_instruction.html')
+
+@login_required
+def contact_view(request):
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        email = request.POST.get('email')
+        subject = request.POST.get('subject')
+        message = request.POST.get('message')
+        
+        # Here you can add code to handle the form submission
+        # For example, send an email or save to database
+        
+        messages.success(request, 'Thank you for your message. We will get back to you soon!')
+        return redirect('contact')
+        
+    return render(request, 'contact.html')

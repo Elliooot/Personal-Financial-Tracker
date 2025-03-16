@@ -29,6 +29,35 @@
       background: #343a40;
       color: white;
       padding: 20px;
+      transition: all 0.3s ease;
+      position: fixed;
+      z-index: 1000;
+    }
+    .sidebar.collapsed {
+      width: 60px !important;
+      padding: 20px 10px;
+    }
+    .sidebar.collapsed .sidebar-text,
+    .sidebar.collapsed h4 {
+      display: none;
+    }
+    /* .sidebar.collapsed .sidebar-logo {
+      margin-right: 0;
+    } */
+    .sidebar.collapsed .logout-btn {
+      left: 10px;
+      /* width: 40px; */
+      justify-content: center;
+    }
+    .sidebar.collapsed .logout-btn span {
+      display: none;
+    }
+    .main-content {
+      transition: all 0.3s ease;
+      margin-left: 16.666667%;
+    }
+    .main-content.expanded {
+      margin-left: 60px;
     }
     .sidebar a {
       color: white;
@@ -36,8 +65,10 @@
       display: flex;
       align-items: center;
       padding: 10px;
+      white-space: nowrap;
     }
-    .sidebar a:hover {
+    .sidebar a:hover,
+    .hamburger-btn:hover {
       background: #495057;
     }
     .active {
@@ -61,6 +92,45 @@
     .logout-btn:hover {
       color: #ff4444;
     }
+    #categorySelect {
+      height: 25px;
+      font-size: 10px;
+    }
+    .hamburger-btn {
+      position: relative;
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .hamburger-btn i {
+      font-size: 20px;
+      margin: 0;
+    }
+    .sidebar.collapsed .hamburger-btn {
+      width: 40px;
+      height: 40px;
+      padding: 10px;
+    }
+    .title-container {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+      width: 100%;
+      overflow: hidden;
+    }
+    .title-container h4 {
+      margin: 0;
+      margin-left: 10px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
   </style>
 </head>
 <body>
@@ -68,26 +138,40 @@
     <div class="row">
       <!-- Side Bar -->
       <nav class="col-md-2 d-md-block sidebar">
-        <h4>Wallet Notes</h4>
+        <div class="title-container">
+          <button class="hamburger-btn">
+            <i class="bi bi-list"></i>
+          </button>
+          <h4>Wallet Notes</h4>
+        </div>
         <a href="{% url 'detail' %}" id="detail-link" class="{% block active_detail %}{% endblock %}">
           <img src="{% static 'img/detail.png' %}" alt="Detail Logo" class="sidebar-logo">
-          Detail
+          <span class="sidebar-text">Detail</span>
         </a>
         <a href="{% url 'statistics' %}" id="statistics-link" class="{% block active_statistics %}{% endblock %}">
           <img src="{% static 'img/statistics.png' %}" alt="Statistics Logo" class="sidebar-logo">
-          Statistics
+          <span class="sidebar-text">Statistics</span>
         </a>
         <a href="{% url 'management' %}" id="management-link" class="{% block active_management %}{% endblock %}">
           <img src="{% static 'img/management.png' %}" alt="Management Logo" class="sidebar-logo">
-          Management
+          <span class="sidebar-text">Management</span>
+        </a>
+        <a href="{% url 'user_instruction' %}" id="user-instruction-link" class="{% block active_user_instruction %}{% endblock %}">
+          <img src="{% static 'img/instruction.png' %}" alt="User Instruction Logo" class="sidebar-logo">
+          <span class="sidebar-text">User Instruction</span>
+        </a>
+        <a href="{% url 'contact' %}" id="contact-link" class="{% block active_contact %}{% endblock %}">
+          <img src="{% static 'img/contact.png' %}" alt="Contact Logo" class="sidebar-logo">
+          <span class="sidebar-text">Contact Us</span>
         </a>
         <a href="{% url 'logout' %}" class="logout-btn">
-          <i class="bi bi-box-arrow-left"></i>&nbsp;&nbsp;Logout
+          <i class="bi bi-box-arrow-left"></i>
+          <span>&nbsp;&nbsp;Logout</span>
         </a>
       </nav>
       
       <!-- Main Content -->
-      <main class="col-md-10 p-4">
+      <main class="col-md-10 p-4 main-content">
         {% block content %}{% endblock %}
       </main>
     </div>
@@ -386,6 +470,59 @@
       transactionType: 'all',
       category: 'all'
     }
+
+    // Sidebar collapse
+    document.addEventListener('DOMContentLoaded', function() {
+      const toggleBtn = document.querySelector('.hamburger-btn');
+      const sidebar = document.querySelector('.sidebar');
+      const mainContent = document.querySelector('.main-content');
+      
+      // Function to check if device is mobile
+      function isSmallScreen() {
+        return window.innerWidth <= 768;
+      }
+      
+      // Initialize sidebar state based on screen size
+      function initializeSidebarState() {
+        const savedState = localStorage.getItem('sidebarCollapsed');
+        
+        if (savedState !== null) {
+          if (savedState === 'true') {
+            sidebar.classList.add('collapsed');
+            mainContent.classList.add('expanded');
+          }
+          return;
+        }
+        
+        // Set default state based on screen size
+        if (isSmallScreen()) {
+          sidebar.classList.add('collapsed');
+          mainContent.classList.add('expanded');
+          localStorage.setItem('sidebarCollapsed', 'true');
+        } else {
+          sidebar.classList.remove('collapsed');
+          mainContent.classList.remove('expanded');
+          localStorage.setItem('sidebarCollapsed', 'false');
+        }
+      }
+      
+      // Initialize on page load
+      initializeSidebarState();
+      
+      // Handle window resize
+      window.addEventListener('resize', function() {
+        // Only change state if there's no saved preference
+        if (localStorage.getItem('sidebarCollapsed') === null) {
+          initializeSidebarState();
+        }
+      });
+      
+      toggleBtn.addEventListener('click', function() {
+        sidebar.classList.toggle('collapsed');
+        mainContent.classList.toggle('expanded');
+        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+      });
+    });
 
     // Filter transactions
     function getFilteredTransactions(){
@@ -834,62 +971,80 @@
       });
     }
 
-    // For Statistics Page
-    function initStatisticsPage() {
-      console.log('Initializing statistics page...');
+      // For Statistics Page
+      function initStatisticsPage() {
+        console.log('Initializing statistics page...');
 
-      // Get transaction data from backend
-      fetch('/api/transactions/dates/')
-        .then(response => response.json())
-        .then(data => {
-          window.monthsByYear = data.monthsByYear; 
-          initYearOptions(data.years);
-        initMonthOptions(data.monthsByYear[Math.max(...data.years)]);  // init month options for the latest year
-        switchMode('year');
-      })
-      .catch(error => {
-        console.error('Error fetching transaction dates:', error);
-      });
-    }
+        // Get transaction data from backend
+        fetch('/api/transactions/dates/')
+          .then(response => response.json())
+          .then(data => {
+            window.monthsByYear = data.monthsByYear; 
+            initYearOptions(data.years);
+            initMonthOptions(data.monthsByYear[Math.max(...data.years)]);  // init month options for the latest year
+            switchMode('month');
+            
+            // Initialize budget pie chart category select with "entire_period"
+            const categorySelect = document.getElementById('categorySelect');
+            if (categorySelect) {
+              categorySelect.value = 'entire_period';
+              // initial budget pie chart 
+              updateCharts(document.getElementById('monthSelect').parentElement.style.display === 'none' ? 'year' : 'month');
+            }
+          })
+          .catch(error => {
+            console.error('Error fetching transaction dates:', error);
+          });
 
-    function initYearOptions(availableYears) {
-      const yearSelect = document.getElementById('yearSelect');
-      if (!yearSelect) return;
-
-      yearSelect.innerHTML = ''; // clear existing options
-      
-      // generate options based on available years
-      availableYears.forEach(year => {
-        const option = document.createElement('option');
-        option.value = year;
-        option.textContent = year;
-        yearSelect.appendChild(option);
-      });
-
-      // set the latest year as default
-      if (availableYears.length > 0) {
-        yearSelect.value = Math.max(...availableYears);
+        // Add event listener for budget pie chart category select
+        const categorySelect = document.getElementById('categorySelect');
+        if (categorySelect) {
+          categorySelect.addEventListener('change', function() {
+            const selectedCategory = this.value;
+            const mode = document.getElementById('monthSelect').parentElement.style.display === 'none' ? 'year' : 'month';
+            updateCharts(mode);
+          });
+        }
       }
-    }
 
-    function initMonthOptions(availableMonths) {
-      const monthSelect = document.getElementById('monthSelect');
-      if (!monthSelect) return;
+      function initYearOptions(availableYears) {
+        const yearSelect = document.getElementById('yearSelect');
+        if (!yearSelect) return;
 
-      monthSelect.innerHTML = ''; // clear existing options
-    
-      const monthNames = [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'
-      ];
+        yearSelect.innerHTML = ''; // clear existing options
+        
+        // generate options based on available years
+        availableYears.forEach(year => {
+          const option = document.createElement('option');
+          option.value = year;
+          option.textContent = year;
+          yearSelect.appendChild(option);
+        });
 
-      // generate options based on available months
-      availableMonths.forEach(month => {
-        const option = document.createElement('option');
-        option.value = month;
-        option.textContent = monthNames[month - 1];
-        monthSelect.appendChild(option);
-      });
+        // set the latest year as default
+        if (availableYears.length > 0) {
+          yearSelect.value = Math.max(...availableYears);
+        }
+      }
+
+      function initMonthOptions(availableMonths) {
+        const monthSelect = document.getElementById('monthSelect');
+        if (!monthSelect) return;
+
+        monthSelect.innerHTML = ''; // clear existing options
+      
+        const monthNames = [
+          'January', 'February', 'March', 'April', 'May', 'June',
+          'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+
+        // generate options based on available months
+        availableMonths.forEach(month => {
+          const option = document.createElement('option');
+          option.value = month;
+          option.textContent = monthNames[month - 1];
+          monthSelect.appendChild(option);
+        });
 
       // set the latest month as default
       if (availableMonths.length > 0) {
@@ -904,7 +1059,7 @@
       });
       const activeBtn = document.querySelector(`.filter-btn[onclick="switchMode('${mode}')"]`);
       if (activeBtn) {
-          activeBtn.classList.add('active');
+        activeBtn.classList.add('active');
       }
 
       // handle month dropdown
@@ -912,23 +1067,27 @@
       const yearSelect = document.getElementById('yearSelect');
       
       if (monthSelect) {
-          if (mode === 'year') {
-              monthSelect.disabled = true;
-              monthSelect.value = '';
-              monthSelect.style.color = 'transparent';
-          } else {
-              // when switch to month mode
-              monthSelect.disabled = false;
-              monthSelect.style.color = '';
-              
-              // get the selected year
-              const selectedYear = yearSelect.value;
-              
-              // use the saved monthsByYear data to re-initialize month options
-              if (window.monthsByYear && window.monthsByYear[selectedYear]) {
-                  initMonthOptions(window.monthsByYear[selectedYear]);
-              }
+        const monthSelectContainer = monthSelect.parentElement;
+    
+        if (mode === 'year') {
+          monthSelectContainer.style.display = 'none'; // hide the month dropdown
+          monthSelect.disabled = true;
+          monthSelect.value = '';
+        } else {
+          // when switch to month mode
+          monthSelectContainer.style.display = ''; // show the month dropdown
+          monthSelect.disabled = false;
+          monthSelect.style.color = '';
+          
+          // automatically select the latest month
+          const selectedYear = yearSelect.value;
+          
+          if (window.monthsByYear && window.monthsByYear[selectedYear]) {
+            const availableMonths = window.monthsByYear[selectedYear];
+            const latestMonth = Math.max(...availableMonths);
+            monthSelect.value = latestMonth;
           }
+        }
       }
       updateCharts(mode);
     }
@@ -937,14 +1096,15 @@
       const yearSelect = document.getElementById('yearSelect');
       if (yearSelect) {
         const selectedYear = yearSelect.value;
-        console.log('Selected year:', selectedYear);
         
         // update month options
         if (window.monthsByYear && window.monthsByYear[selectedYear]) {
           initMonthOptions(window.monthsByYear[selectedYear]);
         }
         
-        updateCharts('year');
+        // keep current mode unchanged
+        const currentMode = document.getElementById('monthSelect').parentElement.style.display === 'none' ? 'year' : 'month';
+        updateCharts(currentMode);
       }
     }
 
@@ -961,15 +1121,13 @@
       if (!yearSelect) return;
 
       const selectedYear = yearSelect.value;
-      const selectedMonth = (mode === 'month' && monthSelect && !monthSelect.disabled) 
-          ? monthSelect.value 
-          : null;
+      const selectedMonth = mode === 'month' ? monthSelect.value : null;
 
       const params = new URLSearchParams();
       params.append('year', selectedYear || '');
       params.append('mode', mode || 'year');
       if (selectedMonth) {
-          params.append('month', selectedMonth);
+        params.append('month', selectedMonth);
       }
 
       const url = `/api/statistics/data/?${params.toString()}`;
@@ -989,24 +1147,24 @@
           });
     }
 
-    // function updateLineChart(data, mode) {
-        
-    // }
+// function updateLineChart(data, mode) {
+    
+// }
 
     function updatePieChart(chart, data, type) {
-        const categoryData = data[`${type}_by_category`];
-        if (categoryData && Object.keys(categoryData).length > 0) {
-            chart.data.labels = Object.keys(categoryData);
-            chart.data.datasets[0].data = Object.values(categoryData);
-            chart.data.datasets[0].backgroundColor = ['#A8DFF1', '#ECBA73', '#F5E2D4', '#024757', '#E5989B'];
-            chart.data.datasets[0].datalabels.color = '#FFCE56';
-        } else {
-            chart.data.labels = [`No ${type.charAt(0).toUpperCase() + type.slice(1)} Data`];
-            chart.data.datasets[0].data = [1];
-            chart.data.datasets[0].backgroundColor = ['#E0E0E0'];
-            chart.data.datasets[0].datalabels.color = '#FFCE56';
-        }
-        chart.update();
+      const categoryData = data[`${type}_by_category`];
+      if (categoryData && Object.keys(categoryData).length > 0) {
+        chart.data.labels = Object.keys(categoryData);
+        chart.data.datasets[0].data = Object.values(categoryData);
+        chart.data.datasets[0].backgroundColor = ['#A8DFF1', '#ECBA73', '#F5E2D4', '#024757', '#E5989B'];
+        chart.data.datasets[0].datalabels.color = '#FFCE56';
+      } else {
+        chart.data.labels = [`No ${type.charAt(0).toUpperCase() + type.slice(1)} Data`];
+        chart.data.datasets[0].data = [1];
+        chart.data.datasets[0].backgroundColor = ['#E0E0E0'];
+        chart.data.datasets[0].datalabels.color = '#FFCE56';
+      }
+      chart.update();
     }
 
     function updateRankingTable(data, type) {
@@ -1018,123 +1176,108 @@
       rankingTable.innerHTML = '';
 
       const createEmptyRows = (startIndex, count) => {
-          for (let i = startIndex; i < count; i++) {
-              const row = document.createElement('tr');
-              row.className = `rank-item ${type}${i + 1}`;
-              row.innerHTML = `
-                  <td>${i + 1}</td>
-                  <td>-</td>
-                  <td>0.00 £</td>
-              `;
-              rankingTable.appendChild(row);
-          }
+        for (let i = startIndex; i < count; i++) {
+          const row = document.createElement('tr');
+          row.className = `rank-item ${type}${i + 1}`;
+          row.innerHTML = `
+            <td>${i + 1}</td>
+            <td>-</td>
+            <td>0.00 £</td>
+          `;
+          rankingTable.appendChild(row);
+        }
       };
 
       const categoryData = data[`${type}_by_category`];
       if (categoryData && Object.keys(categoryData).length > 0) {
-          // convert category and amount to array and sort
-          const items = Object.entries(categoryData)
-              .map(([category, amount]) => ({category, amount}))
-              .sort((a, b) => b.amount - a.amount)
-              .slice(0, 5);
+        // convert category and amount to array and sort
+        const items = Object.entries(categoryData)
+          .map(([category, amount]) => ({category, amount}))
+          .sort((a, b) => b.amount - a.amount)
+          .slice(0, 5);
 
-          items.forEach((item, index) => {
-              const row = document.createElement('tr');
-              row.className = `rank-item ${type}${index + 1}`;
-              row.innerHTML = `
-                  <td>${index + 1}</td>
-                  <td>${item.category}</td>
-                  <td>${item.amount.toFixed(2)} £</td>
-              `;
-              rankingTable.appendChild(row);
-          });
+        items.forEach((item, index) => {
+          const row = document.createElement('tr');
+          row.className = `rank-item ${type}${index + 1}`;
+          row.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${item.category}</td>
+            <td>${item.amount.toFixed(2)} £</td>
+          `;
+          rankingTable.appendChild(row);
+        });
 
-          // if no data, show 5 empty rows
-          createEmptyRows(items.length, 5);
+        // if no data, show 5 empty rows
+        createEmptyRows(items.length, 5);
       } else {
-          // if no data, show 5 empty rows
-          createEmptyRows(0, 5);
+        // if no data, show 5 empty rows
+        createEmptyRows(0, 5);
       }
-    }
-
-    function updateExpenseRanking(data) {
-      updateRankingTable(data, 'expense');
-    }
-
-    function updateIncomeRanking(data) {
-      updateRankingTable(data, 'income');
     }
 
     function updateStatistics(data) {
       try {
-          console.log('Updating statistics with data:', data);
-          
-          const formatCurrency = (number) => {
-              const prefix = number >= 0 ? '+' : '';
-              return `${prefix}${number.toFixed(2)} £`;
-          };
+        console.log('Updating statistics with data:', data);
+        
+        const formatCurrency = (number) => {
+          const prefix = number >= 0 ? '+' : '';
+          return `${prefix}${number.toFixed(2)} £`;
+        };
 
-          // update statistics block
-          const incomeElement = document.querySelector('.stat-item.in h3');
-          const expenseElement = document.querySelector('.stat-item.out h3');
-          const balanceElement = document.querySelector('.stat-item.balance h3');
-          const balanceBox = document.querySelector('.stat-item.balance');
-          const mode = document.getElementById('monthSelect').value === '0' ? 'year' : 'month';
+        // update statistics block
+        const incomeElement = document.querySelector('.stat-item.in h3');
+        const expenseElement = document.querySelector('.stat-item.out h3');
+        const balanceElement = document.querySelector('.stat-item.balance h3');
+        const balanceBox = document.querySelector('.stat-item.balance');
+        const mode = document.getElementById('monthSelect').parentElement.style.display === 'none' ? 'year' : 'month';
 
 
-          if (incomeElement) incomeElement.textContent = formatCurrency(data.income);
-          if (expenseElement) expenseElement.textContent = formatCurrency(-data.expense);
-          if (balanceElement) {
-              balanceElement.textContent = formatCurrency(data.balance);
-              if (balanceBox) {
-                  if (data.balance < 0) {
-                      balanceBox.style.backgroundColor = '#E50046'; 
-                  } else if (data.balance > 0) {
-                      balanceBox.style.backgroundColor = '#1F7D53'; 
-                  } else {
-                      balanceBox.style.backgroundColor = ''; 
-                  }
-              }
+        if (incomeElement) incomeElement.textContent = formatCurrency(data.income);
+        if (expenseElement) expenseElement.textContent = formatCurrency(-data.expense);
+        if (balanceElement) {
+          balanceElement.textContent = formatCurrency(data.balance);
+          if (balanceBox) {
+            if (data.balance < 0) {
+              balanceBox.style.backgroundColor = '#E50046'; 
+            } else if (data.balance > 0) {
+              balanceBox.style.backgroundColor = '#1F7D53'; 
+            } else {
+              balanceBox.style.backgroundColor = ''; 
+            }
           }
+        }
 
-          // update income and expense line chart
-          // updateLineChart(data, mode);
-
-          // update expense pie chart
-          if (typeof updateExpenseChart === 'function') {
-              updateExpenseChart(data);
-          }
-          // update income pie chart
-          if (typeof updateIncomeChart === 'function') {
-              updateIncomeChart(data);
-          }
-          updatePieChart(expenseChart, data, 'expense');
-          updatePieChart(incomeChart, data, 'income');
-          // update expense ranking table
-          updateExpenseRanking(data);
-          // update income ranking table
-          updateIncomeRanking(data);
+        //update budget pie chart
+        updateBudgetChart(budgetChart, data)
+        // update line chart
+        updateLineChart(data, mode);
+        // update pie charts
+        updatePieChart(expenseChart, data, 'expense');
+        updatePieChart(incomeChart, data, 'income');
+        // update ranking tables
+        updateRankingTable(data, 'expense');
+        updateRankingTable(data, 'income');
       } catch (error) {
-          console.error('Error in updateStatistics:', error);
-          throw error;
+        console.error('Error in updateStatistics:', error);
+        throw error;
       }
     }
 
     // initialize when DOMContentLoaded
     document.addEventListener('DOMContentLoaded', function() {
-        if (document.getElementById('statistics-page')) {
-            initStatisticsPage();
-            
-            // rebind month selector event
-            const monthSelect = document.getElementById('monthSelect');
-            const yearSelect = document.getElementById('yearSelect');
-            if (monthSelect) {
-                monthSelect.addEventListener('change', handleMonthChange);
-            }
-            if (yearSelect) {
-                yearSelect.addEventListener('change', handleYearChange);
-            }
+      if (document.getElementById('statistics-page')) {
+        initStatisticsPage();
+        
+        // rebind month selector event
+        const monthSelect = document.getElementById('monthSelect');
+        const yearSelect = document.getElementById('yearSelect');
+        if (monthSelect) {
+          monthSelect.addEventListener('change', handleMonthChange);
         }
+        if (yearSelect) {
+          yearSelect.addEventListener('change', handleYearChange);
+        }
+      }
     });
 
     // Edit Transaction Submit Handler
