@@ -700,3 +700,38 @@ def get_statistics_data(request):
 
 def user_instruction(request):
     return render(request, 'user_instruction.html')
+
+@login_required
+def contact_view(request):
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        email = request.POST.get('email')
+        subject = request.POST.get('subject')
+        message = request.POST.get('message')
+        
+        try:
+            from django.core.mail import send_mail
+            from django.conf import settings
+            
+            email_message = f"""
+            User name: {name}
+            User email: {email}
+            Message: {message}
+            """
+            
+            send_mail(
+                subject=f"Wallet Notes Contact: {subject}",
+                message=email_message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[settings.ADMIN_EMAIL],
+                fail_silently=False,
+            )
+            
+            messages.success(request, 'Your message has been sent successfully!')
+            return redirect('contact')
+            
+        except Exception as e:
+            messages.error(request, f'Sorry, there was an error sending your message. Please try again later.')
+            return redirect('contact')
+    
+    return render(request, 'contact.html')
