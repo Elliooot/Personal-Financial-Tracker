@@ -28,6 +28,8 @@ urlpatterns = [
     path('detail/', views.detail_view, name='detail'),
     path('statistics/', views.statistics_view, name='statistics'),
     path('management/', views.management_view, name='management'),
+    path('user-instruction/', views.user_instruction, name='user_instruction'),
+    path('contact/', views.contact_view, name='contact'),
     path('add-transaction/', views.add_transaction_view, name='add_transaction'),
     path('delete-transaction/', delete_transaction_view, name='delete_transaction'),
     path('api/transactions/dates/', views.get_transaction_dates, name='transaction_dates'),
@@ -43,7 +45,6 @@ urlpatterns = [
     path('delete-currency/', views.delete_currency_view, name='delete_currency'),
     path('add-account/', views.add_account_view, name='add_account'),
     path('delete-account/', views.delete_account_view, name='delete_account'),
-    path('user-instruction/', views.user_instruction, name='user_instruction'),
     path('get-accounts/', views.get_accounts_view, name='get_accounts'),
     path('toggle-save-transaction/', views.toggle_save_transaction, name='toggle_save_transaction'),
 ]

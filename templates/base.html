@@ -29,6 +29,35 @@
       background: #343a40;
       color: white;
       padding: 20px;
+      transition: all 0.3s ease;
+      position: fixed;
+      z-index: 1000;
+    }
+    .sidebar.collapsed {
+      width: 60px !important;
+      padding: 20px 10px;
+    }
+    .sidebar.collapsed .sidebar-text,
+    .sidebar.collapsed h4 {
+      display: none;
+    }
+    /* .sidebar.collapsed .sidebar-logo {
+      margin-right: 0;
+    } */
+    .sidebar.collapsed .logout-btn {
+      left: 10px;
+      /* width: 40px; */
+      justify-content: center;
+    }
+    .sidebar.collapsed .logout-btn span {
+      display: none;
+    }
+    .main-content {
+      transition: all 0.3s ease;
+      margin-left: 16.666667%;
+    }
+    .main-content.expanded {
+      margin-left: 60px;
     }
     .sidebar a {
       color: white;
@@ -36,8 +65,10 @@
       display: flex;
       align-items: center;
       padding: 10px;
+      white-space: nowrap;
     }
-    .sidebar a:hover {
+    .sidebar a:hover,
+    .hamburger-btn:hover {
       background: #495057;
     }
     .active {
@@ -65,6 +96,41 @@
       height: 25px;
       font-size: 10px;
     }
+    .hamburger-btn {
+      position: relative;
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .hamburger-btn i {
+      font-size: 20px;
+      margin: 0;
+    }
+    .sidebar.collapsed .hamburger-btn {
+      width: 40px;
+      height: 40px;
+      padding: 10px;
+    }
+    .title-container {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+      width: 100%;
+      overflow: hidden;
+    }
+    .title-container h4 {
+      margin: 0;
+      margin-left: 10px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
   </style>
 </head>
 <body>
@@ -72,31 +138,40 @@
     <div class="row">
       <!-- Side Bar -->
       <nav class="col-md-2 d-md-block sidebar">
-        <h4>Wallet Notes</h4>
+        <div class="title-container">
+          <button class="hamburger-btn">
+            <i class="bi bi-list"></i>
+          </button>
+          <h4>Wallet Notes</h4>
+        </div>
         <a href="{% url 'detail' %}" id="detail-link" class="{% block active_detail %}{% endblock %}">
           <img src="{% static 'img/detail.png' %}" alt="Detail Logo" class="sidebar-logo">
-          Detail
+          <span class="sidebar-text">Detail</span>
         </a>
         <a href="{% url 'statistics' %}" id="statistics-link" class="{% block active_statistics %}{% endblock %}">
           <img src="{% static 'img/statistics.png' %}" alt="Statistics Logo" class="sidebar-logo">
-          Statistics
+          <span class="sidebar-text">Statistics</span>
         </a>
         <a href="{% url 'management' %}" id="management-link" class="{% block active_management %}{% endblock %}">
           <img src="{% static 'img/management.png' %}" alt="Management Logo" class="sidebar-logo">
-           Management
+          <span class="sidebar-text">Management</span>
         </a>
         <a href="{% url 'user_instruction' %}" id="user-instruction-link" class="{% block active_user_instruction %}{% endblock %}">
           <img src="{% static 'img/instruction.png' %}" alt="User Instruction Logo" class="sidebar-logo">
-          User Instruction
-
+          <span class="sidebar-text">User Instruction</span>
+        </a>
+        <a href="{% url 'contact' %}" id="contact-link" class="{% block active_contact %}{% endblock %}">
+          <img src="{% static 'img/contact.png' %}" alt="Contact Logo" class="sidebar-logo">
+          <span class="sidebar-text">Contact Us</span>
         </a>
         <a href="{% url 'logout' %}" class="logout-btn">
-          <i class="bi bi-box-arrow-left"></i>&nbsp;&nbsp;Logout
+          <i class="bi bi-box-arrow-left"></i>
+          <span>&nbsp;&nbsp;Logout</span>
         </a>
       </nav>
       
       <!-- Main Content -->
-      <main class="col-md-10 p-4">
+      <main class="col-md-10 p-4 main-content">
         {% block content %}{% endblock %}
       </main>
     </div>
@@ -406,10 +481,58 @@
       category: 'all'
     }
 
-    // document.getElementById('sidebarToggle').addEventListener('click', function() {
-    //   const sidebar = document.querySelector('.sidebar');
-    //   sidebar.classList.toggle('collapsed');
-    // });
+    // Sidebar collapse
+    document.addEventListener('DOMContentLoaded', function() {
+      const toggleBtn = document.querySelector('.hamburger-btn');
+      const sidebar = document.querySelector('.sidebar');
+      const mainContent = document.querySelector('.main-content');
+      
+      // Function to check if device is mobile
+      function isSmallScreen() {
+        return window.innerWidth <= 768;
+      }
+      
+      // Initialize sidebar state based on screen size
+      function initializeSidebarState() {
+        const savedState = localStorage.getItem('sidebarCollapsed');
+        
+        if (savedState !== null) {
+          if (savedState === 'true') {
+            sidebar.classList.add('collapsed');
+            mainContent.classList.add('expanded');
+          }
+          return;
+        }
+        
+        // Set default state based on screen size
+        if (isSmallScreen()) {
+          sidebar.classList.add('collapsed');
+          mainContent.classList.add('expanded');
+          localStorage.setItem('sidebarCollapsed', 'true');
+        } else {
+          sidebar.classList.remove('collapsed');
+          mainContent.classList.remove('expanded');
+          localStorage.setItem('sidebarCollapsed', 'false');
+        }
+      }
+      
+      // Initialize on page load
+      initializeSidebarState();
+      
+      // Handle window resize
+      window.addEventListener('resize', function() {
+        // Only change state if there's no saved preference
+        if (localStorage.getItem('sidebarCollapsed') === null) {
+          initializeSidebarState();
+        }
+      });
+      
+      toggleBtn.addEventListener('click', function() {
+        sidebar.classList.toggle('collapsed');
+        mainContent.classList.toggle('expanded');
+        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+      });
+    });
 
     // Filter transactions
     function getFilteredTransactions(){
