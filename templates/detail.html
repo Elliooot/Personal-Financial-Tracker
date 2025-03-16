@@ -45,11 +45,13 @@
             <td>{{ t.category }}</td>
             <td>{{ t.transaction_type }}</td>
             <td>{{ t.currency }}</td>
-            <td>{{ t.account }}</td>
+            <td>{{ t.account_name }}</td>
             <td>{{ t.amount }}</td>
             <td>{{ t.description }}</td>
             <td>
-              <button class="btn btn-success btn-sm" onclick="saveTransaction({{ forloop.counter0 }})">Save</button>
+              <button class='btn ${t.is_saved ? "btn-secondary" : "btn-success"} btn-sm' onclick="toggleSaveTransaction(${index}, ${isSavedView ? 'true' : 'false'})">
+                  ${t.is_saved ? "Unsave" : "Save"}
+              </button>
             <td>
               <button class='btn btn-warning btn-sm' onclick="openEditModal({{ forloop.counter0 }})">Edit</button>
               <button class="btn btn-danger btn-sm" onclick="deleteTransaction({{ forloop.counter0 }})">Delete</button>
@@ -67,10 +69,10 @@
       <select id="category-filter" class="form-select w-25 d-inline-block">
         <option value="all">All</option>
         {% for category in categories_json.true %}
-          <option value="{{ category }}">{{ category }}</option>
+          <option value="{{ category.name }}">{{ category.name }}</option>
         {% endfor %}
         {% for category in categories_json.false %}
-          <option value="{{ category }}">{{ category }}</option>
+          <option value="{{ category.name }}">{{ category.name }}</option>
         {% endfor %}
       </select>
       <button class="btn btn-primary" onclick="filterCategory()">Filter</button>
@@ -96,10 +98,12 @@
             <td>{{ t.transaction_type }}</td>
             <td>{{ t.currency }}</td>
             <td>{{ t.amount }}</td>
-            <td>{{ t.account }}</td>
+            <td>{{ t.account_name }}</td>
             <td>{{ t.description }}</td>
             <td>
-              <button class="btn btn-success btn-sm" onclick="saveTransaction({{ forloop.counter0 }})">Save</button>
+              <button class='btn ${t.is_saved ? "btn-secondary" : "btn-success"} btn-sm' onclick="toggleSaveTransaction(${index})">
+                  ${t.is_saved ? "Unsave" : "Save"}
+              </button>
             <td>
               <button class='btn btn-warning btn-sm' onclick="openEditModal({{ forloop.counter0 }})">Edit</button>
               <button class="btn btn-danger btn-sm" onclick="deleteTransaction({{ forloop.counter0 }})">Delete</button>
@@ -143,4 +147,6 @@
 {% block page_scripts %}
   {{ transactions|default:"[]"|json_script:"transactions_data" }}
   {{ categories_json|default:"{}"|json_script:"categories_data" }}
+  {{ accounts_json|default:"[]"|json_script:"accounts_data" }}
+  {{ currencies_json|default:"[]"|json_script:"currencies_data" }}
 {% endblock %}

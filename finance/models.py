@@ -28,15 +28,23 @@ class Currency(models.Model):
         return self.currency_code
 
 class Account(models.Model):
+    ACCOUNT_TYPE_CHOICES = [
+        ('Cash', 'Cash'), 
+        ('Bank', 'Bank'), 
+        ('Credit Card', 'Credit Card'), 
+        ('Debit Card', 'Debit Card'),
+    ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     account_name = models.CharField(max_length=255)
-    account_type = models.CharField(max_length=50)
+    account_type = models.CharField(max_length=50, choices=ACCOUNT_TYPE_CHOICES)
     balance = models.DecimalField(max_digits=15, decimal_places=2)
 
     def __str__(self) -> str:
         return self.account_name
 
 class Category(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
     is_income = models.BooleanField(default=False)
 
@@ -55,7 +63,7 @@ class Transaction(models.Model):
     is_saved = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.category()} - {self.amount} - {self.date}"
+        return f"{self.category} - {self.amount} - {self.date}"
 
 class Budget(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -63,5 +71,5 @@ class Budget(models.Model):
     budget_amount = models.DecimalField(max_digits=15, decimal_places=2)
     period = models.DateField()
 
-    def __str__(self) -> str:
-        return self.budget_amount
+    def __str__(self):
+        return f"{self.period} - {self.category} - {self.budget_amount}"
