@@ -88,10 +88,7 @@
         <a href="{% url 'user_instruction' %}" id="user-instruction-link" class="{% block active_user_instruction %}{% endblock %}">
           <img src="{% static 'img/instruction.png' %}" alt="User Instruction Logo" class="sidebar-logo">
           User Instruction
-        </a>
-        <a href="{% url 'contact' %}" id="contact-link" class="{% block active_contact %}{% endblock %}">
-          <img src="{% static 'img/contact.png' %}" alt="Contact Logo" class="sidebar-logo">
-          Contact Us
+
         </a>
         <a href="{% url 'logout' %}" class="logout-btn">
           <i class="bi bi-box-arrow-left"></i>&nbsp;&nbsp;Logout
@@ -1069,7 +1066,7 @@
       if (categoryData && Object.keys(categoryData).length > 0) {
         chart.data.labels = Object.keys(categoryData);
         chart.data.datasets[0].data = Object.values(categoryData);
-        chart.data.datasets[0].backgroundColor = ['#A8DFF1', '#ECBA73', '#F5E2D4', '#297487', '#E5989B', '#FFD698', '#6FA0C6', '#E6ACDD', '#946181', '#FFB069'];
+        chart.data.datasets[0].backgroundColor = ['#A8DFF1', '#ECBA73', '#F5E2D4', '#024757', '#E5989B'];
         chart.data.datasets[0].datalabels.color = '#FFCE56';
       } else {
         chart.data.labels = [`No ${type.charAt(0).toUpperCase() + type.slice(1)} Data`];
@@ -1958,11 +1955,11 @@
     }
 
     function exportToCSV() {
-      const headers = ["Date", "Categories", "Type", "Currency", "Amount", "Account", "Description"];
+      const headers = ["Date", "Categories", "Pending", "Description"];
       const csvContent = "data:text/csv;charset=utf-8," 
           + headers.join(",") + "\n" 
           + transactions.map(t => 
-              `${t.date},${t.category},${t.transaction_type ? 'Income' : 'Expense'},${t.currency},${t.amount},${t.account},${t.description}`
+              `${t.date},${t.category},${t.amount},${t.description}`
           ).join("\n");
 
       const encodedUri = encodeURI(csvContent);
