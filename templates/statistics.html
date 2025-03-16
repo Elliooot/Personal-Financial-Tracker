@@ -85,6 +85,11 @@
     align-items: center;   
     padding: 10px;
   }
+
+  #categorySelect {
+    height: 25px;
+    font-size: 10px;
+  }
     
 </style>  
 
@@ -144,8 +149,14 @@
     <!-- Budget Block -->
     <div class="col-md-3">
       <div class="card">
-        <div class="card-header">
-          Budget
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span>Budget</span>
+          <div class="dropdown">
+            <select id="categorySelect" class="form-select form-select-sm w-auto d-inline-block">
+              Select Category
+            </select>
+            </ul>
+          </div>
         </div>
         <div class="card-body">
           <canvas id="budgetChart" width="300" height="300"></canvas>

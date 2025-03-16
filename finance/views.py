@@ -589,6 +589,7 @@ def get_statistics_data(request):
         daily_data = {}
         expense_by_category = {}
         income_by_category = {}
+        category_budgets = {}
         total_income = 0
         total_expense = 0
         total_budget = 0
@@ -643,6 +644,11 @@ def get_statistics_data(request):
             except Exception:
                 continue
 
+        # handle category budgets
+        for budget in budgets:
+            category_name = budget.category.name
+            category_budgets[category_name] = category_budgets.get(category_name, 0) + float(budget.budget_amount)
+
         response_data = {
             'income': float(total_income),
             'expense': float(total_expense),
@@ -653,6 +659,7 @@ def get_statistics_data(request):
             'budget_data': {
                 'total_budget': total_budget,
                 'used_budget': float(total_expense),
+                'category_budgets': category_budgets
             }
         }
 
