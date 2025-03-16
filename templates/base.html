@@ -1164,6 +1164,11 @@
         if (updateUrlMeta) {
           updateUrl = updateUrlMeta.getAttribute('content');
         }
+
+        // Close the modal
+        document.getElementById('saveChanges').blur();
+        const editModal = bootstrap.Modal.getInstance(document.getElementById('editModal'));
+        editModal.hide();
         
         fetch(updateUrl, {
           method: 'POST',
@@ -1201,11 +1206,6 @@
           console.error('Error:', error);
           alert('An error occurred while updating the transaction');
         });
-        
-        // Close the modal
-        document.getElementById('saveChanges').blur();
-        const editModal = bootstrap.Modal.getInstance(document.getElementById('editModal'));
-        editModal.hide();
       }
     });
 
