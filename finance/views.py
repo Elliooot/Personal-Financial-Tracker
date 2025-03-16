@@ -66,8 +66,10 @@ def logout_view(request):
 
 @login_required
 def detail_view(request):
-    transactions = Transaction.objects.all().order_by('-date')
-    categories = Category.objects.all()
+    transactions = Transaction.objects.filter(user=request.user).order_by('-date')
+    categories = Category.objects.filter(user=request.user)
+    accounts = Account.objects.filter(user=request.user)
+    currencies = Currency.objects.all()
 
     # Serialize transactions and categories for JSON
     transactions_data = [
@@ -84,18 +86,60 @@ def detail_view(request):
         } for t in transactions
     ]
 
-    income_categories = [c.name for c in categories if c.is_income]
-    expense_categories = [c.name for c in categories if not c.is_income]
+    income_categories = []
+    expense_categories = []
+    
+    for cat in categories.filter(is_income=True).annotate(
+        transaction_count=Count('transaction'),
+        total_amount=Sum('transaction__amount')
+    ):
+        income_categories.append({
+            'id': cat.id,
+            'name': cat.name,
+            'transaction_count': cat.transaction_count or 0,
+            'total_amount': str(cat.total_amount) if cat.total_amount else "0.00"
+        })
+    
+    for cat in categories.filter(is_income=False).annotate(
+        transaction_count=Count('transaction'),
+        total_amount=Sum('transaction__amount')
+    ):
+        expense_categories.append({
+            'id': cat.id,
+            'name': cat.name,
+            'transaction_count': cat.transaction_count or 0,
+            'total_amount': str(cat.total_amount) if cat.total_amount else "0.00"
+        })
     
     categories_data = {
         'true': income_categories,
         'false': expense_categories 
     }
+    
+    # 序列化帳戶數據
+    accounts_data = [
+        {
+            'id': a.id,
+            'account_name': a.account_name,
+            'account_type': a.account_type,
+            'balance': str(a.balance)
+        } for a in accounts
+    ]
+    
+    # 序列化貨幣數據
+    currencies_data = [
+        {
+            'id': c.id,
+            'currency_code': c.currency_code,
+            'exchange_rate': str(c.exchange_rate)
+        } for c in currencies
+    ]
 
     return render(request, 'detail.html', {
-        'transactions': transactions_data, 
+        'transactions': transactions_data,
         'categories_json': categories_data,
-        # 'categories': categories # Keep original categories for modal selection
+        'accounts_json': accounts_data,
+        'currencies_json': currencies_data
     })
 
 @csrf_exempt
@@ -257,7 +301,7 @@ def statistics_view(request):
 
 def management_view(request):
     # 獲取所有類別對象並計算交易數量和金額總和
-    categories = Category.objects.all().annotate(
+    categories = Category.objects.filter(user=request.user).annotate(
         transaction_count=Count('transaction'),
         total_amount=Sum('transaction__amount')
     )
@@ -290,6 +334,17 @@ def management_view(request):
         'true': income_categories_list,
         'false': expense_categories_list
     }
+
+    accounts = Account.objects.filter(user=request.user)
+
+    accounts_data = [
+        {
+            'id': a.id,
+            'account_name': a.account_name,
+            'account_type': a.account_type,
+            'balance': str(a.balance)
+        } for a in accounts
+    ]
     
     return render(request, 'management.html', {
         # 'income_categories': income_categories,
@@ -297,6 +352,7 @@ def management_view(request):
         'categories_json': json.dumps(categories_data),
         # 'income_categories_list': json.dumps(income_categories_list),
         # 'expense_categories_list': json.dumps(expense_categories_list)
+        'accounts_json': accounts_data,
     })
 
 @csrf_exempt
@@ -535,7 +591,13 @@ def add_account_view(request):
                 account_type=account_type,
                 balance=balance,
             )
-            return JsonResponse({'status': 'success', 'message': 'Account added successfully'})
+            return JsonResponse({'status': 'success', 'message': 'Account added successfully', 'account': {
+                'id': account.id,
+                'account_name': account.account_name,
+                'account_type': account.account_type,
+                'balance': str(account.balance)
+                }
+            })
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': f'Add account failed: {str(e)}'}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
@@ -559,10 +621,14 @@ def delete_account_view(request):
     return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
 
 @csrf_exempt
-
+@login_required
 def get_accounts_view(request):
     try:
+        print(f"User: {request.user.username}, Finding accounts...")
+        
         accounts = Account.objects.filter(user=request.user)
+        print(f"Found {accounts.count()} accounts")
+        
         account_list = []
         for account in accounts:
             account_dict = {
@@ -572,14 +638,17 @@ def get_accounts_view(request):
                 'balance': str(account.balance)
             }
             account_list.append(account_dict)
+            
+        print(f"Returning {len(account_list)} accounts")
         return JsonResponse({'status': 'success', 'accounts': account_list})
     except Exception as e:
+        print(f"Error in get_accounts_view: {str(e)}")
         return JsonResponse({'status': 'error', 'message': f'Get accounts failed: {str(e)}'}, status=500)
 
 
 def get_transaction_dates(request):
     # Get Year and Month from Transactions
-    transactions = Transaction.objects.all()
+    transactions = Transaction.objects.filter(user=request.user)
     
     months_by_year = {}
     years = set()

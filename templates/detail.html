@@ -69,10 +69,10 @@
       <select id="category-filter" class="form-select w-25 d-inline-block">
         <option value="all">All</option>
         {% for category in categories_json.true %}
-          <option value="{{ category }}">{{ category }}</option>
+          <option value="{{ category.name }}">{{ category.name }}</option>
         {% endfor %}
         {% for category in categories_json.false %}
-          <option value="{{ category }}">{{ category }}</option>
+          <option value="{{ category.name }}">{{ category.name }}</option>
         {% endfor %}
       </select>
       <button class="btn btn-primary" onclick="filterCategory()">Filter</button>
@@ -147,4 +147,6 @@
 {% block page_scripts %}
   {{ transactions|default:"[]"|json_script:"transactions_data" }}
   {{ categories_json|default:"{}"|json_script:"categories_data" }}
+  {{ accounts_json|default:"[]"|json_script:"accounts_data" }}
+  {{ currencies_json|default:"[]"|json_script:"currencies_data" }}
 {% endblock %}

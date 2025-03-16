@@ -44,6 +44,7 @@ class Account(models.Model):
         return self.account_name
 
 class Category(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
     is_income = models.BooleanField(default=False)
 

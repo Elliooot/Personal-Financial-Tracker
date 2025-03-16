@@ -132,12 +132,7 @@
             </div>
             <div class="mb-3">
               <label for="editAccount" class="form-label">Account</label>
-              <select class="form-select" id="editAccount">
-                <option value="Cash">Cash</option>
-                <option value="Bank">Bank Account</option>
-                <option value="Credit Card">Credit Card</option>
-                <option value="Debit Card">Debit Card</option>
-              </select>
+              <select class="form-select" id="editAccount"></select>
             </div>
             <div class="mb-3">
               <label for="editDescription" class="form-label">Description</label>
@@ -191,13 +186,8 @@
               <input type="text" class="form-control" id="addAmount" required>
             </div>
             <div class="mb-3">
-              <label for="addAccount" class="form-label">Account</label>
-              <select class="form-select" id="addAccount">
-                <option value="Cash">Cash</option>
-                <option value="Bank">Bank Account</option>
-                <option value="Credit Card">Credit Card</option>
-                <option value="Debit Card">Debit Card</option>
-              </select>
+              <label for="addedAccount" class="form-label">Account</label>
+              <select class="form-select" id="addedAccount" required></select>
             </div>
             <div class="mb-3">
               <label for="addDescription" class="form-label">Description</label>
@@ -365,7 +355,7 @@
               <input type="text" class="form-control" id="accountName" required>
             </div>
             <div class="mb-3">
-              <label for="addAccount" class="form-label">Account</label>
+              <label for="addAccount" class="form-label">Account Type</label>
               <select class="form-select" id="addAccount">
                 <option value="Cash">Cash</option>
                 <option value="Bank">Bank Account</option>
@@ -581,34 +571,88 @@
         });
     }
 
+    // Open Add Transaction Modal
     function openAddModal() {
-        const addModal = new bootstrap.Modal(document.getElementById('addModal'));
-        addModal.show();
-        updateCategoryDropdown(); // Update drop-down box
+      // Set current date as default
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('addDate').value = today;
+      
+      // Reset form fields
+      document.getElementById('addType').value = 'false'; // Default to expense
+      document.getElementById('addAmount').value = '';
+      document.getElementById('addDescription').value = '';
+      
+      // Update dropdowns with latest data
+      updateCategoryDropdown();
+      updateAccountDropdown();
+      updateCurrencyDropdown('addCurrency');
+      
+      // Show modal
+      const addModal = new bootstrap.Modal(document.getElementById('addModal'));
+      addModal.show();
     }
 
+    // Open Edit Transaction Modal
     function openEditModal(index) {
       const transaction = window.transactions[index];
       if (!transaction) {
         console.error('Transaction not found at index:', index);
         return;
       }
+      
+      // Store the current index for later use
       currentEditIndex = index;
 
+      // Fill form fields with transaction data
       document.getElementById('editDate').value = transaction.date;
-      const editTypeElement = document.getElementById('editType');
-      editTypeElement.value = transaction.transaction_type ? "true" : "false";
+      document.getElementById('editType').value = transaction.transaction_type ? "true" : "false";
       
-      const editCategoryElement = document.getElementById('editCategory');
+      // Update category dropdown based on transaction type
       updateEditCategoryDropdown(transaction.transaction_type ? "true" : "false");
       
-      editCategoryElement.value = transaction.category;
+      // Set values after dropdowns are populated
+      setTimeout(() => {
+        // Find and select the correct category
+        const editCategoryElement = document.getElementById('editCategory');
+        if (editCategoryElement) {
+          // Try to find the option with matching text
+          for (let i = 0; i < editCategoryElement.options.length; i++) {
+            if (editCategoryElement.options[i].text === transaction.category) {
+              editCategoryElement.selectedIndex = i;
+              break;
+            }
+          }
+        }
+        
+        // Currency
+        const editCurrencyElement = document.getElementById('editCurrency');
+        if (editCurrencyElement) {
+          for (let i = 0; i < editCurrencyElement.options.length; i++) {
+            if (editCurrencyElement.options[i].value === transaction.currency) {
+              editCurrencyElement.selectedIndex = i;
+              break;
+            }
+          }
+        }
+        
+        // Account
+        const editAccountElement = document.getElementById('editAccount');
+        if (editAccountElement) {
+          for (let i = 0; i < editAccountElement.options.length; i++) {
+            if (editAccountElement.options[i].value === transaction.account_name) {
+              editAccountElement.selectedIndex = i;
+              break;
+            }
+          }
+        }
+      }, 100);
 
-      document.getElementById('editCurrency').value = transaction.currency;
+      updateEditAccountDropdown();
+      
       document.getElementById('editAmount').value = transaction.amount;
-      document.getElementById('editAccount').value = transaction.account_name;
-      document.getElementById('editDescription').value = transaction.description;
+      document.getElementById('editDescription').value = transaction.description || '';
 
+      // Show modal
       const editModal = new bootstrap.Modal(document.getElementById('editModal'));
       editModal.show();
     }
@@ -626,11 +670,11 @@
       
       window.categories[type].forEach(category => {
         const option = document.createElement('option');
-        option.value = category;
-        option.textContent = category;
+        option.value = category.name;
+        option.textContent = category.name;
         categoryDropdown.appendChild(option);
       });
-      console.log(window.categories);
+      console.log('Updated edit category dropdown:', window.categories[type]);
     }
 
      // Update drop-down box
@@ -649,11 +693,11 @@
 
       window.categories[selectedType].forEach(category => {
         const option = document.createElement('option');
-        option.value = category;
-        option.textContent = category;
+        option.value = category.name; // 使用 category name 作為值
+        option.textContent = category.name;
         categoryDropdown.appendChild(option);
       });
-      console.log(window.categories);
+      console.log('Updated category dropdown:', window.categories[selectedType]);
     }
 
     function updateBudgetCategoryDropdown(elementId = 'budgetCategory') {
@@ -675,6 +719,67 @@
           option.value = category.id;
           option.textContent = category.name;
           categoryDropdown.appendChild(option);
+        });
+      }
+    }
+
+    function updateAccountDropdown() {
+      const accountDropdown = document.getElementById('addedAccount');
+      if (!accountDropdown) return;
+      
+      accountDropdown.innerHTML = '';
+      
+      if (!window.accounts || !Array.isArray(window.accounts)) {
+        console.error('Accounts not defined or not an array');
+        return;
+      }
+      
+      window.accounts.forEach(account => {
+        const option = document.createElement('option');
+        option.value = account.account_name;
+        option.textContent = account.account_name;
+        accountDropdown.appendChild(option);
+      });
+      
+      console.log('Updated account dropdown with accounts:', window.accounts.length);
+    }
+
+    // 同樣為編輯模態框創建更新函數
+    function updateEditAccountDropdown() {
+      const accountDropdown = document.getElementById('editAccount');
+      if (!accountDropdown) return;
+      
+      accountDropdown.innerHTML = '';
+      
+      if (!window.accounts || !Array.isArray(window.accounts)) {
+        console.error('Accounts not defined or not an array');
+        return;
+      }
+      
+      window.accounts.forEach(account => {
+        const option = document.createElement('option');
+        option.value = account.account_name;
+        option.textContent = account.account_name;
+        accountDropdown.appendChild(option);
+      });
+    }
+
+    // Update currency dropdown
+    function updateCurrencyDropdown(elementId = 'addCurrency') {
+      const currencyDropdown = document.getElementById(elementId);
+      if (!currencyDropdown) return;
+      
+      // Keep the default options
+      const defaultOptions = currencyDropdown.innerHTML;
+      currencyDropdown.innerHTML = defaultOptions;
+      
+      // If we have loaded custom currencies, add them
+      if (window.currencies && Array.isArray(window.currencies)) {
+        window.currencies.forEach(currency => {
+          const option = document.createElement('option');
+          option.value = currency.currency_code;
+          option.textContent = currency.currency_code;
+          currencyDropdown.appendChild(option);
         });
       }
     }
@@ -1032,6 +1137,7 @@
         }
     });
 
+    // Edit Transaction Submit Handler
     document.getElementById('saveChanges').addEventListener('click', () => {
       if (currentEditIndex !== null) {
         const transaction = window.transactions[currentEditIndex];
@@ -1044,8 +1150,14 @@
           currency: document.getElementById('editCurrency').value,
           amount: document.getElementById('editAmount').value,
           account: document.getElementById('editAccount').value,
-          description: document.getElementById('editDescription').value
+          description: document.getElementById('editDescription').value || ''
         };
+        
+        // Validate required fields
+        if (!updatedTransaction.date || !updatedTransaction.category || !updatedTransaction.amount || !updatedTransaction.account) {
+          alert('Please fill in all required fields');
+          return;
+        }
         
         let updateUrl = 'update-transaction/';
         const updateUrlMeta = document.querySelector('meta[name="update-transaction-url"]');
@@ -1053,13 +1165,13 @@
           updateUrl = updateUrlMeta.getAttribute('content');
         }
         
-        fetch('/update-transaction/', {
+        fetch(updateUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
           },
           body: new URLSearchParams({
-            'id': window.transactions[currentEditIndex].id,
+            'id': transactionId,
             'date': updatedTransaction.date,
             'category': updatedTransaction.category,
             'transaction_type': updatedTransaction.transaction_type,
@@ -1072,15 +1184,13 @@
         .then(response => response.json())
         .then(data => {
           if (data.status === 'success') {
-            window.transactions[currentEditIndex] = {
-              ...transaction,
-              ...updatedTransaction
-            };
+            // Update local transaction data
+            Object.assign(window.transactions[currentEditIndex], updatedTransaction);
             
+            // Refresh UI
             refreshTables();
             
-            // 重新加載頁面以反映類別總金額的變更
-            // 或者可以新增一個API來獲取最新的類別數據
+            // Reload to get updated category totals
             window.location.reload();
           } else {
             console.error('Failed to update:', data.message);
@@ -1092,12 +1202,14 @@
           alert('An error occurred while updating the transaction');
         });
         
+        // Close the modal
         document.getElementById('saveChanges').blur();
         const editModal = bootstrap.Modal.getInstance(document.getElementById('editModal'));
         editModal.hide();
       }
     });
 
+    // Add Transaction Submit Handler
     document.getElementById('addTransaction').addEventListener('click', () => {
       const newTransaction = {
         date: document.getElementById('addDate').value,
@@ -1105,8 +1217,14 @@
         transaction_type: document.getElementById('addType').value === 'true',
         currency: document.getElementById('addCurrency').value,
         amount: document.getElementById('addAmount').value,
-        account: document.getElementById('addAccount').value,
-        description: document.getElementById('addDescription').value
+        account: document.getElementById('addedAccount').value,
+        description: document.getElementById('addDescription').value || ''
+      }
+
+      // Validate required fields
+      if (!newTransaction.date || !newTransaction.category || !newTransaction.amount || !newTransaction.account) {
+        alert('Please fill in all required fields');
+        return;
       }
 
       let addUrl = 'add-transaction/';
@@ -1115,7 +1233,7 @@
         addUrl = addUrlMeta.getAttribute('content');
       }
       
-      fetch('/add-transaction/', {
+      fetch(addUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -1133,11 +1251,18 @@
       .then(response => response.json())
       .then(data => {
         if (data.status === 'success') {
-          newTransaction.id = data.id || Date.now();
+          // Add new transaction to local array with returned ID
+          newTransaction.id = data.transaction_id;
+          newTransaction.is_saved = false; // Default to not saved
           transactions.push(newTransaction);
+          
+          // Refresh tables and budgets
           refreshTables();
-          calculateRemainingBudget();
+          if (typeof calculateRemainingBudget === 'function') {
+            calculateRemainingBudget();
+          }
 
+          // Reload page to get updated data
           window.location.reload();
         } else {
           console.error('Failed to add:', data.message);
@@ -1149,7 +1274,7 @@
         alert('An error occurred while adding the transaction');
       });
 
-      // document.getElementById('addTransaction').blur();
+      // Close the modal
       const addModal = bootstrap.Modal.getInstance(document.getElementById('addModal'));
       addModal.hide();
     });
@@ -1418,26 +1543,25 @@
 
     function calculateRemainingBudget() {
       budgets.forEach(budget => {
-        const [year, month] = budget.yearMonth.split('-'); // 解析年份和月份
+        const [year, month] = budget.yearMonth.split('-'); 
         let totalSpent = 0;
 
-        // 计算指定年份和月份的支出
+        //  calculate total spent for the budget period
         totalSpent = transactions
           .filter(transaction => {
             const transactionDate = new Date(transaction.date);
             return (
               transactionDate.getFullYear() === parseInt(year) &&
-              transactionDate.getMonth() + 1 === parseInt(month) && // 月份从 0 开始，需要 +1
-              transaction.amount.startsWith('-') // 只计算支出
+              transactionDate.getMonth() + 1 === parseInt(month) && // months are 0-indexed
+              transaction.amount.startsWith('-') // only count expenses
             );
           })
           .reduce((sum, transaction) => sum + Math.abs(parseFloat(transaction.amount.replace('£', ''))), 0);
 
-        // 更新剩余额度
         budget.remainingAmount = budget.amount - totalSpent;
       });
 
-      updateBudgetTable(); // 更新表格
+      updateBudgetTable();
     }
 
     function openAddCurrencyModal() {
@@ -1683,11 +1807,16 @@
       fetch(getAccountsUrl)
         .then(response => response.json())
         .then(data => {
-          if (data.status === 'success') {
-            accounts = data.accounts;
-            updateAccountTable();
+          if (data.status === 'success' && data.accounts && Array.isArray(data.accounts)) {
+            console.log('Successfully loaded accounts from API:', data.accounts.length);
+            if (data.accounts.length > 0) {
+              window.accounts = data.accounts;
+              updateAccountTable();
+            } else {
+              console.warn('API returned empty accounts array, keeping current data');
+            }
           } else {
-            console.error('Failed to load accounts:', data.message);
+            console.error('Failed to load accounts:', data);
           }
         })
         .catch(error => {
@@ -1698,32 +1827,37 @@
     function updateAccountTable() {
       const accountTable = document.getElementById('account-table');
       if (!accountTable) {
-        console.error('Account table not found');
+        console.error('Account table element not found');
         return;
       }
       
-      if (!window.accounts) {
-        console.error('Accounts not defined');
+      if (!window.accounts || !Array.isArray(window.accounts)) {
+        console.error('Accounts not defined or not an array:', window.accounts);
         return;
       }
       
-      accountTable.innerHTML = '';
+      console.log('Updating account table with', window.accounts.length, 'accounts');
       
-      window.accounts.forEach(account => {
-        const accountType = account.account_type.charAt(0).toUpperCase() + account.account_type.slice(1);
-
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${account.account_name}</td>
-          <td>${accountType}</td>
-          <td>${account.balance}</td>
-          <td>
-            <button class="btn btn-danger btn-sm" onclick="deleteAccount(${account.id})">Delete</button>
-          </td>
-        `;
-        accountTable.appendChild(row);
-      });
+      if (window.accounts.length > 0) {
+        let tableContent = '';
+        window.accounts.forEach(account => {
+          tableContent += `
+            <tr>
+              <td>${account.account_name}</td>
+              <td>${account.account_type}</td>
+              <td>£${account.balance}</td>
+              <td>
+                <button class="btn btn-danger btn-sm" onclick="deleteAccount(${account.id})">Delete</button>
+              </td>
+            </tr>
+          `;
+        });
+        accountTable.innerHTML = tableContent;
+      } else {
+        accountTable.innerHTML = '<tr><td colspan="4" class="text-center">No accounts available</td></tr>';
+      }
     }
+
 
     document.getElementById('saveAccount').addEventListener('click', () => {
       const accountName = document.getElementById('accountName').value;
@@ -1787,7 +1921,6 @@
       .then(response => response.json())
       .then(data => {
         if (data.status === 'success') {
-          window.accounts = window.accounts.filter(a => a.id !== id);
           loadAccounts();
         } else {
           alert(data.message);
@@ -1825,6 +1958,28 @@
         } catch (e) {
           console.error('Failed to parse transactions data:', e);
           window.transactions = [];
+        }
+      }
+
+      if (!window.accounts) {
+        const accountsDataElement = document.getElementById('accounts_data');
+        if(accountsDataElement){
+          try {
+            window.accounts = JSON.parse(accountsDataElement.textContent);
+            console.log('Successfully parsed accounts:', window.accounts);
+            console.log('Accounts data type:', typeof window.accounts);
+            console.log('Is array?', Array.isArray(window.accounts));
+            if (Array.isArray(window.accounts)) {
+              console.log('Accounts length:', window.accounts.length);
+              console.log('First account sample:', window.accounts.length > 0 ? JSON.stringify(window.accounts[0]) : 'none');
+            }
+          } catch (e) {
+            console.error('Failed to parse accounts data:', e);
+            window.accounts = [];
+          }
+        } else {
+          console.warn('Accounts data element not found, initializing empty accounts');
+          window.accounts = [];
         }
       }
       
@@ -1866,6 +2021,13 @@
 
     document.addEventListener("DOMContentLoaded", () => {
       initializeData();
+      console.log('After initialization, accounts:', window.accounts);
+      const accountTable = document.getElementById('account-table');
+      if (accountTable) {
+        console.log('Account table found, updating with current data');
+        updateAccountTable();
+        console.log("HI")
+      }
 
       const tabLinks = document.querySelectorAll('a[data-bs-toggle="tab"]');
   
@@ -1893,6 +2055,7 @@
         refreshTables();
         filterCategory();
         updateCategoryDropdown(); // Refresh drop-down box
+        updateAccountDropdown();
       }
       
       if(document.getElementById('management-page')){
@@ -1908,9 +2071,8 @@
       }
 
       // Other general initialization
-      updateBudgetTable();
       calculateRemainingBudget();
-    }); // Added missing closing brace
+    });
   </script>
   
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
