@@ -1154,21 +1154,156 @@
       console.log('Fetching URL:', url);
 
       fetch(url)
-          .then(response => {
-              if (!response.ok) {
-                  throw new Error(`HTTP error! status: ${response.status}`);
-              }
-              return response.json();
-          })
-          .then(data => updateStatistics(data))
-          .catch(error => {
-              alert('Error updating statistics.');
-          });
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then(data => {
+          updateStatistics(data);
+          updateBudgetDropdown(data);
+        })
+        .catch(error => alert('Error updating statistics.')
+      );
     }
 
-// function updateLineChart(data, mode) {
-    
-// }
+    function updateBudgetDropdown(data) {
+      const categorySelect = document.getElementById('categorySelect');
+      if (!categorySelect) return;
+
+      // store current selection before clearing
+      const currentSelection = categorySelect.value;
+
+      categorySelect.innerHTML = ''; 
+
+      if (data.budget_data && data.budget_data.category_budgets && Object.keys(data.budget_data.category_budgets).length > 0) {
+        // add "entire period" in to list
+        const defaultOption = document.createElement('option');
+        defaultOption.value = 'entire_period';
+        defaultOption.textContent = 'Entire Period';
+        categorySelect.appendChild(defaultOption);
+
+        // set options for categories that have budgets
+        Object.keys(data.budget_data.category_budgets).forEach(category => {
+          const option = document.createElement('option');
+          option.value = category;
+          option.textContent = category;
+          categorySelect.appendChild(option);
+        });
+
+        // restore previous selection if it still exists in the options, otherwise use "entire_period"
+        if (currentSelection && (currentSelection === 'entire_period' || data.budget_data.category_budgets[currentSelection])) {
+          categorySelect.value = currentSelection;
+        } else {
+          categorySelect.value = 'entire_period';
+        }
+
+        // trigger chart update immediately if this is the initial load
+        if (!currentSelection) {
+          const mode = document.getElementById('monthSelect').parentElement.style.display === 'none' ? 'year' : 'month';
+          updateBudgetChart(budgetChart, data);
+        }
+      } else {
+        // if there is no budget
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'No Data';
+        categorySelect.appendChild(option);
+      }
+    }
+
+    function updateBudgetChart(chart, data) {
+      const budgetData = data.budget_data;
+      const selectedCategory = document.getElementById('categorySelect').value;
+
+      if (!budgetData || !budgetData.category_budgets) {
+        chart.data.labels = ['No Budget Data'];
+        chart.data.datasets[0].data = [1];
+        chart.data.datasets[0].backgroundColor = ['#E0E0E0'];
+        chart.update();
+        return;
+      }
+      
+      // get budget data
+      let usedAmount = 0;
+      let totalAmount = 0;
+
+      if (selectedCategory === 'entire_period') {
+        // calculate total amount of all categories
+        totalAmount = Object.values(budgetData.category_budgets).reduce((sum, amount) => sum + amount, 0);
+        
+        // sum up expense by category which has budget
+        Object.keys(budgetData.category_budgets).forEach(category => {
+          if (data.expense_by_category[category]) {
+            usedAmount += data.expense_by_category[category];
+          }
+        });
+      } else if (selectedCategory) {
+        usedAmount = data.expense_by_category[selectedCategory] || 0;
+        totalAmount = budgetData.category_budgets?.[selectedCategory] || 0;
+      }
+
+      const remainingAmount = Math.max(0, totalAmount - usedAmount);
+          
+      if (totalAmount !== 0) {
+        // update budget pie chart
+        chart.data.labels = ['Used', 'Remaining'];
+        chart.data.datasets[0].data = [usedAmount, remainingAmount];
+        chart.data.datasets[0].backgroundColor = ['#A8DFF1', '#ECBA73'];
+      } else {
+        // no budget data
+        chart.data.labels = ['No Budget Data'];
+        chart.data.datasets[0].data = [1];
+        chart.data.datasets[0].backgroundColor = ['#E0E0E0'];
+        chart.data.datasets[0].datalabels.color = '#FFCE56';
+      }
+      
+      chart.update();
+    }
+
+    function updateLineChart(data, mode) {
+
+      if (!incomeExpenseChart) return;
+
+      let labels = [];
+      let expenseData = [];
+      let incomeData = [];
+      let balanceData = [];
+
+      if (mode === 'year') {
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        
+        for (let month = 1; month <= 12; month++) {
+          labels.push(months[month - 1]);
+          const monthData = data.monthly_data?.[month] || { income: 0, expense: 0 };
+          expenseData.push(monthData.expense);
+          incomeData.push(monthData.income);
+          balanceData.push(monthData.income - monthData.expense);
+        }
+      } else {
+        const selectedYear = parseInt(document.getElementById('yearSelect').value);
+        const selectedMonth = parseInt(document.getElementById('monthSelect').value);
+        
+        const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+        
+        for (let day = 1; day <= daysInMonth; day++) {
+          labels.push(day.toString());
+          const dayData = data.daily_data?.[day] || { income: 0, expense: 0 };
+          expenseData.push(dayData.expense);
+          incomeData.push(dayData.income);
+          balanceData.push(dayData.income - dayData.expense);
+        }
+      }
+
+      // update line chart data
+      incomeExpenseChart.data.labels = labels;
+      incomeExpenseChart.data.datasets[0].data = expenseData;
+      incomeExpenseChart.data.datasets[1].data = incomeData;
+      incomeExpenseChart.data.datasets[2].data = balanceData;
+
+      incomeExpenseChart.update();
+    }
 
     function updatePieChart(chart, data, type) {
       const categoryData = data[`${type}_by_category`];
