@@ -438,7 +438,6 @@
               <label for="currencySelect" class="form-label">Select Currency</label>
               <select class="form-control" id="currencySelect">
                 <option value="">-- Select Currency --</option>
-                <!-- 這裡將通過 JavaScript 填充其他主要貨幣 -->
               </select>
             </div>
           </form>
@@ -2281,7 +2280,6 @@
       .then(response => response.json())
       .then(data => {
         if (data.status === 'success') {
-          // 刷新貨幣表格
           loadCurrencies();
         } else if(data.status === 'exists') {
           alert("Currency already exists");

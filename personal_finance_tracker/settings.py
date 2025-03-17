@@ -135,3 +135,15 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'finance.User'
+
+# Open Exchange Rates API key
+OPENEXCHANGERATES_API_KEY = '4746be01daf7486b98a44ec9f14fa792'  # Replace with your actual API key
+
+# Set GBP as the default/base currency
+DEFAULT_CURRENCY = 'GBP'
+
+# Base currency for display in UI
+BASE_CURRENCY_SYMBOL = '£'  # GBP currency symbol
+
+# Currency update interval in seconds (e.g., daily = 86400)
+CURRENCY_UPDATE_INTERVAL = 86400
