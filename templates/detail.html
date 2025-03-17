@@ -15,6 +15,9 @@
       <li class="nav-item">
         <a class="nav-link" data-bs-toggle="tab" href="#by-saved">By Saved</a>
       </li>
+      <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="tab" href="#search">Search</a>
+      </li>
     </ul>
     <div>
       <button class="btn btn-primary" onclick="openAddModal()">Add</button>
@@ -117,6 +120,31 @@
     </div>
 
     <div class="tab-pane fade" id="by-saved">
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Category</th>
+            <th>Type</th>
+            <th>Currency</th>
+            <th>Amount</th>
+            <th>Account</th>
+            <th>Description</th>
+            <th>Save</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="transaction-table-saved">
+          <tr><td colspan="9" class="text-center">No transactions available</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="tab-pane fade" id="search">
+      <label for="name" class="col-sm-2 col-form-label" style="background-color: white;">Your Name:</label>
+      <div class="col-sm-3">
+        <input type="text" class="form-control" id="name" name="name" required>
+      </div>
       <table class="table table-bordered">
         <thead>
           <tr>
