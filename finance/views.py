@@ -326,6 +326,7 @@ def get_transaction_dates(request):
 
 def get_statistics_data(request):
     transactions = Transaction.objects.filter(user=request.user)
+    budgets = Budget.objects.filter(user=request.user)
 
     try:
         year = request.GET.get('year')
@@ -355,16 +356,16 @@ def get_statistics_data(request):
             daily_data = {str(i): {'income': 0, 'expense': 0} for i in range(1, days_in_month + 1)}
             transactions = base_query.filter(date__month=month_int)
             # handle budget data
-            budgets = Budget.objects.filter(
+            budget_data = budgets.filter(
                 period__year=int(year),
                 period__month=int(month)
             )
-            total_budget = sum(float(b.budget_amount) for b in budgets)
+            total_budget = sum(float(b.budget_amount) for b in budget_data)
         else:
             transactions = base_query
             # handle budget data
-            budgets = Budget.objects.filter(period__year=int(year))
-            total_budget = sum(float(b.budget_amount) for b in budgets)
+            budget_data = budgets.filter(period__year=int(year))
+            total_budget = sum(float(b.budget_amount) for b in budget_data)
 
         # handle transactions
         for transaction in transactions:
@@ -393,7 +394,7 @@ def get_statistics_data(request):
                 continue
 
         # handle category budgets
-        for budget in budgets:
+        for budget in budget_data:
             category_name = budget.category.name
             category_budgets[category_name] = category_budgets.get(category_name, 0) + float(budget.budget_amount)
 

@@ -68,18 +68,19 @@
     </div>
     
     <div class="tab-pane fade" id="by-category">
-      <label for="category-filter">Categories:</label>
-      <select id="category-filter" class="form-select w-25 d-inline-block">
-        <option value="all">All</option>
-        {% for category in categories_json.true %}
-          <option value="{{ category.name }}">{{ category.name }}</option>
-        {% endfor %}
-        {% for category in categories_json.false %}
-          <option value="{{ category.name }}">{{ category.name }}</option>
-        {% endfor %}
-      </select>
-      <button class="btn btn-primary" onclick="filterCategory()">Filter</button>
-      <table class="table table-bordered mt-3">
+      <div style="min-height: 60px">
+        <label for="category-filter">Categories:</label>
+        <select id="category-filter" class="form-select w-25 d-inline-block" onchange="filterCategory()">
+          <option value="all">All</option>
+          {% for category in categories_json.true %}
+            <option value="{{ category.name }}">{{ category.name }}</option>
+          {% endfor %}
+          {% for category in categories_json.false %}
+            <option value="{{ category.name }}">{{ category.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <table class="table table-bordered">
         <thead>
           <tr>
             <th>Date</th>
@@ -141,9 +142,11 @@
     </div>
 
     <div class="tab-pane fade" id="search">
-      <label for="name" class="col-sm-2 col-form-label" style="background-color: white;">Your Name:</label>
-      <div class="col-sm-3">
-        <input type="text" class="form-control" id="name" name="name" required>
+      <div style="min-height: 60px">
+        <div class="input-group" style="width: 35%;">
+          <input type="text" id="description-filter" class="form-control" placeholder="Enter description to search..." onkeypress="if(event.key === 'Enter') filterDescription()">
+          <button class="btn btn-primary" type="button" onclick="filterDescription()">Search</button>
+        </div>
       </div>
       <table class="table table-bordered">
         <thead>
@@ -159,7 +162,7 @@
             <th>Action</th>
           </tr>
         </thead>
-        <tbody id="transaction-table-saved">
+        <tbody id="transaction-table-search">
           <tr><td colspan="9" class="text-center">No transactions available</td></tr>
         </tbody>
       </table>
