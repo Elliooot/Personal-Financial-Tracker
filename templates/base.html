@@ -436,7 +436,7 @@
           <form id="addCurrencyForm">
             <div class="mb-3">
               <label for="currency" class="form-label">Currency</label>
-              <select class="form-control" id="currency">
+              <select class="form-control" id="currencySelect">
                 <option value="">-- Select Currency --</option>
                 <optgroup label="System Currencies">
                   <option value="GBP">GBP</option>
@@ -1979,7 +1979,7 @@
 
     // Update currency dropdown
     function updateCurrencyDropdown(currencies) {
-      const currencySelect = document.getElementById('currency');
+      const currencySelect = document.getElementById('currencySelect');
       if (!currencySelect) return;
       
       if (!currencies || !Array.isArray(currencies)) {
@@ -2017,7 +2017,7 @@
     }
 
     // Monitor currency change event
-    document.getElementById('currency').addEventListener('change', function() {
+    document.getElementById('currencySelect').addEventListener('change', function() {
       const selectedOption = this.options[this.selectedIndex];
       if (selectedOption && selectedOption.dataset.exchangeRate) {
         document.getElementById('exchangeRate').value = selectedOption.dataset.exchangeRate;
@@ -2047,14 +2047,25 @@
     }
 
     function updateCurrencyTable(currencies) {
+      console.log('Updating currency table with data:', currencies);
       const currencyTable = document.getElementById('currency-table');
-      if (!currencyTable) return;
+  
+      if (!currencyTable) {
+        console.error('Currency table element not found');
+        return;
+      }
       
       if (currencies && currencies.length > 0) {
-        currencyTable.innerHTML = currencies.map(currency => {
-          const lastUpdated = new Date(currency.last_updated).toLocaleString();
+        let tableContent = '';
+        currencies.forEach(currency => {
+          let lastUpdated = 'N/A';
+          try {
+            lastUpdated = new Date(currency.last_updated).toLocaleString();
+          } catch (e) {
+            console.error('Error formatting date:', e);
+          }
           
-          return `
+          tableContent += `
             <tr>
               <td>${currency.currency_code}</td>
               <td>${currency.exchange_rate}</td>
@@ -2064,9 +2075,12 @@
               </td>
             </tr>
           `;
-        }).join('');
+        });
+        currencyTable.innerHTML = tableContent;
+        console.log('Currency table updated with', currencies.length, 'items');
       } else {
         currencyTable.innerHTML = '<tr><td colspan="4" class="text-center">No currency available</td></tr>';
+        console.log('No currencies available, showing empty message');
       }
     }
 
@@ -2531,6 +2545,7 @@
       }
 
       if(document.getElementById('currency-table')){
+        console.log('Loading currencies for table...');
         loadCurrencies();
       }
 
@@ -2544,6 +2559,15 @@
 
       // Other general initialization
       calculateRemainingBudget();
+      // document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tabEl => {
+      //   tabEl.addEventListener('shown.bs.tab', function (event) {
+      //     const targetHref = event.target.getAttribute('href');
+      //     if (targetHref === '#currency') {
+      //       console.log('Currency tab activated, loading currencies...');
+      //       loadCurrencies();
+      //     }
+      //   });
+      // });
     });
   </script>
   
