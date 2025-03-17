@@ -157,7 +157,7 @@ def add_transaction_view(request):
         if not date or not category_name or not amount or not account_name:
             return JsonResponse({'status': 'error', 'message': 'Date, category, amount and account are required'}, status=400)
 
-        category, _ = Category.objects.get_or_create(name=category_name)
+        category, _ = Category.objects.get_or_create(name=category_name, user=request.user)
 
         account_obj, _ = Account.objects.get_or_create(
             user=request.user,
