@@ -19,13 +19,20 @@ class User(AbstractUser):
 
     def __str__(self) -> str:
         return self.username
-    
-class Currency(models.Model):
-    currency_code = models.CharField(max_length=10, unique=True)
-    exchange_rate = models.DecimalField(max_digits=10, decimal_places=2)
 
+class Currency(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    currency_code = models.CharField(max_length=10, unique=True)
+    exchange_rate = models.DecimalField(max_digits=10, decimal_places=4)
+    last_updated = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ['user', 'currency_code']
+    
     def __str__(self) -> str:
-        return self.currency_code
+        if self.user:
+            return f"{self.user.username} - {self.currency_code}"
+        return f"System - {self.currency_code}"
 
 class Account(models.Model):
     ACCOUNT_TYPE_CHOICES = [

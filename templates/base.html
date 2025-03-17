@@ -14,6 +14,8 @@
   <meta name="update-budget-url" content="{% url 'update_budget' %}">
   <meta name="delete-budget-url" content="{% url 'delete_budget' %}">
   <meta name="get-budgets-url" content="{% url 'get_budgets' %}">
+  <meta name="get-currencies-url" content="{% url 'get_currencies' %}">
+  <meta name="get-available-currencies-url" content="{% url 'get_available_currencies' %}">
   <meta name="add-currency-url" content="{% url 'add_currency' %}">
   <meta name="delete-currency-url" content="{% url 'delete_currency' %}">
   <meta name="add-account-url" content="{% url 'add_account' %}">
@@ -434,7 +436,22 @@
           <form id="addCurrencyForm">
             <div class="mb-3">
               <label for="currency" class="form-label">Currency</label>
-              <input type="text" class="form-control" id="currency" required>
+              <select class="form-control" id="currency">
+                <option value="">-- Select Currency --</option>
+                <optgroup label="System Currencies">
+                  <option value="GBP">GBP</option>
+                  <option value="EUR">EUR</option>
+                  <option value="USD">USD</option>
+                </optgroup>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="newCurrencyCode" class="form-label">Or Add New Currency Code</label>
+              <input type="text" class="form-control" id="newCurrencyCode" placeholder="e.g. JPY">
+            </div>
+            <div class="mb-3">
+              <label for="exchangeRate" class="form-label">Exchange Rate</label>
+              <input type="number" step="0.0001" class="form-control" id="exchangeRate" required>
             </div>
           </form>
           <div class="modal-footer">
@@ -744,7 +761,7 @@
       // Update dropdowns with latest data
       updateCategoryDropdown();
       updateAccountDropdown();
-      updateCurrencyDropdown('addCurrency');
+      updateTransactionCurrencyDropdown('addCurrency');
       
       // Show modal
       const addModal = new bootstrap.Modal(document.getElementById('addModal'));
@@ -923,26 +940,6 @@
       });
     }
 
-    // Update currency dropdown
-    function updateCurrencyDropdown(elementId = 'addCurrency') {
-      const currencyDropdown = document.getElementById(elementId);
-      if (!currencyDropdown) return;
-      
-      // Keep the default options
-      const defaultOptions = currencyDropdown.innerHTML;
-      currencyDropdown.innerHTML = defaultOptions;
-      
-      // If we have loaded custom currencies, add them
-      if (window.currencies && Array.isArray(window.currencies)) {
-        window.currencies.forEach(currency => {
-          const option = document.createElement('option');
-          option.value = currency.currency_code;
-          option.textContent = currency.currency_code;
-          currencyDropdown.appendChild(option);
-        });
-      }
-    }
-
     function deleteTransaction(index) {
       const transactionId = transactions[index].id;
       console.log('Deleting transaction:', transactionId);
@@ -993,80 +990,80 @@
       });
     }
 
-      // For Statistics Page
-      function initStatisticsPage() {
-        console.log('Initializing statistics page...');
+    // For Statistics Page
+    function initStatisticsPage() {
+      console.log('Initializing statistics page...');
 
-        // Get transaction data from backend
-        fetch('/api/transactions/dates/')
-          .then(response => response.json())
-          .then(data => {
-            window.monthsByYear = data.monthsByYear; 
-            initYearOptions(data.years);
-            initMonthOptions(data.monthsByYear[Math.max(...data.years)]);  // init month options for the latest year
-            switchMode('month');
-            
-            // Initialize budget pie chart category select with "entire_period"
-            const categorySelect = document.getElementById('categorySelect');
-            if (categorySelect) {
-              categorySelect.value = 'entire_period';
-              // initial budget pie chart 
-              updateCharts(document.getElementById('monthSelect').parentElement.style.display === 'none' ? 'year' : 'month');
-            }
-          })
-          .catch(error => {
-            console.error('Error fetching transaction dates:', error);
-          });
-
-        // Add event listener for budget pie chart category select
-        const categorySelect = document.getElementById('categorySelect');
-        if (categorySelect) {
-          categorySelect.addEventListener('change', function() {
-            const selectedCategory = this.value;
-            const mode = document.getElementById('monthSelect').parentElement.style.display === 'none' ? 'year' : 'month';
-            updateCharts(mode);
-          });
-        }
-      }
-
-      function initYearOptions(availableYears) {
-        const yearSelect = document.getElementById('yearSelect');
-        if (!yearSelect) return;
-
-        yearSelect.innerHTML = ''; // clear existing options
-        
-        // generate options based on available years
-        availableYears.forEach(year => {
-          const option = document.createElement('option');
-          option.value = year;
-          option.textContent = year;
-          yearSelect.appendChild(option);
+      // Get transaction data from backend
+      fetch('/api/transactions/dates/')
+        .then(response => response.json())
+        .then(data => {
+          window.monthsByYear = data.monthsByYear; 
+          initYearOptions(data.years);
+          initMonthOptions(data.monthsByYear[Math.max(...data.years)]);  // init month options for the latest year
+          switchMode('month');
+          
+          // Initialize budget pie chart category select with "entire_period"
+          const categorySelect = document.getElementById('categorySelect');
+          if (categorySelect) {
+            categorySelect.value = 'entire_period';
+            // initial budget pie chart 
+            updateCharts(document.getElementById('monthSelect').parentElement.style.display === 'none' ? 'year' : 'month');
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching transaction dates:', error);
         });
 
-        // set the latest year as default
-        if (availableYears.length > 0) {
-          yearSelect.value = Math.max(...availableYears);
-        }
+      // Add event listener for budget pie chart category select
+      const categorySelect = document.getElementById('categorySelect');
+      if (categorySelect) {
+        categorySelect.addEventListener('change', function() {
+          const selectedCategory = this.value;
+          const mode = document.getElementById('monthSelect').parentElement.style.display === 'none' ? 'year' : 'month';
+          updateCharts(mode);
+        });
       }
+    }
 
-      function initMonthOptions(availableMonths) {
-        const monthSelect = document.getElementById('monthSelect');
-        if (!monthSelect) return;
+    function initYearOptions(availableYears) {
+      const yearSelect = document.getElementById('yearSelect');
+      if (!yearSelect) return;
 
-        monthSelect.innerHTML = ''; // clear existing options
+      yearSelect.innerHTML = ''; // clear existing options
       
-        const monthNames = [
-          'January', 'February', 'March', 'April', 'May', 'June',
-          'July', 'August', 'September', 'October', 'November', 'December'
-        ];
+      // generate options based on available years
+      availableYears.forEach(year => {
+        const option = document.createElement('option');
+        option.value = year;
+        option.textContent = year;
+        yearSelect.appendChild(option);
+      });
 
-        // generate options based on available months
-        availableMonths.forEach(month => {
-          const option = document.createElement('option');
-          option.value = month;
-          option.textContent = monthNames[month - 1];
-          monthSelect.appendChild(option);
-        });
+      // set the latest year as default
+      if (availableYears.length > 0) {
+        yearSelect.value = Math.max(...availableYears);
+      }
+    }
+
+    function initMonthOptions(availableMonths) {
+      const monthSelect = document.getElementById('monthSelect');
+      if (!monthSelect) return;
+
+      monthSelect.innerHTML = ''; // clear existing options
+    
+      const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ];
+
+      // generate options based on available months
+      availableMonths.forEach(month => {
+        const option = document.createElement('option');
+        option.value = month;
+        option.textContent = monthNames[month - 1];
+        monthSelect.appendChild(option);
+      });
 
       // set the latest month as default
       if (availableMonths.length > 0) {
@@ -1444,6 +1441,46 @@
       addModal.hide();
     });
 
+    // 用於添加交易表單的貨幣下拉框更新
+    function updateTransactionCurrencyDropdown(elementId) {
+      const currencyDropdown = document.getElementById(elementId);
+      if (!currencyDropdown) return;
+      
+      // 保留現有選項
+      currencyDropdown.innerHTML = '';
+      
+      // 添加默認選項
+      const defaultOption = document.createElement('option');
+      defaultOption.value = '';
+      defaultOption.textContent = '-- Select Currency --';
+      currencyDropdown.appendChild(defaultOption);
+      
+      // 添加系統和用戶貨幣
+      if (!window.currencies || !Array.isArray(window.currencies) || window.currencies.length === 0) {
+        const basicCurrencies = ['GBP', 'EUR', 'USD', 'TWD'];
+        basicCurrencies.forEach(code => {
+          const option = document.createElement('option');
+          option.value = code;
+          option.textContent = code;
+          currencyDropdown.appendChild(option);
+        });
+        
+        console.log('Using basic default currencies');
+      } else {
+        window.currencies.forEach(currency => {
+          const option = document.createElement('option');
+          option.value = currency.currency_code;
+          option.textContent = currency.currency_code;
+          currencyDropdown.appendChild(option);
+        });
+        
+        console.log('Using server-loaded currencies:', window.currencies.length);
+      }
+      
+      console.log('Updated currency dropdown:', elementId);
+      console.log('Options count:', currencyDropdown.options.length);
+    }
+
     function updateCategoryTables() {
       const incomeTable = document.getElementById('income-categories-table');
       const expenseTable = document.getElementById('expense-categories-table');
@@ -1730,8 +1767,17 @@
     }
 
     function openAddCurrencyModal() {
+      if (document.getElementById('newCurrencyCode')) {
+        document.getElementById('newCurrencyCode').value = '';
+      }
+      if (document.getElementById('exchangeRate')) {
+        document.getElementById('exchangeRate').value = '';
+      }
+      
       const addCurrencyModal = new bootstrap.Modal(document.getElementById('addCurrencyModal'));
       addCurrencyModal.show();
+      
+      loadAvailableCurrencies();
     }
 
     function openAddAccountModal() {
@@ -1822,6 +1868,10 @@
         addCategoryUrl = addCategoryUrlMeta.getAttribute('content');
       }
 
+      document.getElementById('saveIncomeCategory').blur();
+      const modal = bootstrap.Modal.getInstance(document.getElementById('addIncomeCategoryModal'));
+      modal.hide();
+
       fetch(addCategoryUrl, {
         method: 'POST',
         headers: {
@@ -1848,11 +1898,10 @@
         }else {
           alert(data.message);
         }
-        const modal = bootstrap.Modal.getInstance(document.getElementById('addIncomeCategoryModal'));
-        modal.hide();
       })
       .catch(error => {
-        alert('Error when adding income category');
+        console.error('Error details:', error);
+        alert('Error when adding income category: ' + error.message);
       });
     });
 
@@ -1864,6 +1913,10 @@
       if (addCategoryUrlMeta) {
         addCategoryUrl = addCategoryUrlMeta.getAttribute('content');
       }
+
+      document.getElementById('saveExpenseCategory').blur();
+      const modal = bootstrap.Modal.getInstance(document.getElementById('addExpenseCategoryModal'));
+      modal.hide();
 
       fetch(addCategoryUrl, {
         method: 'POST',
@@ -1891,16 +1944,146 @@
         }else {
           alert(data.message);
         }
-        const modal = bootstrap.Modal.getInstance(document.getElementById('addExpenseCategoryModal'));
-        modal.hide();
       })
       .catch(error => {
         alert('Error when adding expense category');
       });
     });
 
+    // get available currencies
+    function loadAvailableCurrencies() {
+      let getAvailableCurrenciesUrl = '/get-available-currencies/';
+      const getAvailableCurrenciesUrlMeta = document.querySelector('meta[name="get-available-currencies-url"]');
+      if (getAvailableCurrenciesUrlMeta) {
+        getAvailableCurrenciesUrl = getAvailableCurrenciesUrlMeta.getAttribute('content');
+      }
+      
+      fetch(getAvailableCurrenciesUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          updateCurrencyDropdown(data.currencies);
+        } else {
+          console.error('Failed to load available currencies:', data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error loading available currencies:', error);
+      });
+    }
+
+    // Update currency dropdown
+    function updateCurrencyDropdown(currencies) {
+      const currencySelect = document.getElementById('currency');
+      if (!currencySelect) return;
+      
+      if (!currencies || !Array.isArray(currencies)) {
+        console.error('Invalid currencies data:', currencies);
+        currencies = [];
+      }
+      
+      currencySelect.innerHTML = '<option value="">-- Select Currency --</option>';
+      
+      const systemOptions = document.createElement('optgroup');
+      systemOptions.label = 'System Currencies';
+      
+      const userOptions = document.createElement('optgroup');
+      userOptions.label = 'Your Currencies';
+      
+      currencies.forEach(currency => {
+        const option = document.createElement('option');
+        option.value = currency.id;
+        option.textContent = currency.currency_code;
+        option.dataset.exchangeRate = currency.exchange_rate;
+        
+        if (currency.user) {
+          userOptions.appendChild(option);
+        } else {
+          systemOptions.appendChild(option);
+        }
+      });
+      
+      if (systemOptions.children.length > 0) {
+        currencySelect.appendChild(systemOptions);
+      }
+      if (userOptions.children.length > 0) {
+        currencySelect.appendChild(userOptions);
+      }
+    }
+
+    // Monitor currency change event
+    document.getElementById('currency').addEventListener('change', function() {
+      const selectedOption = this.options[this.selectedIndex];
+      if (selectedOption && selectedOption.dataset.exchangeRate) {
+        document.getElementById('exchangeRate').value = selectedOption.dataset.exchangeRate;
+        document.getElementById('newCurrencyCode').value = '';
+      }
+    });
+
+    function loadCurrencies() {
+      let getCurrenciesUrl = '/get-currencies/';
+      const getCurrenciesUrlMeta = document.querySelector('meta[name="get-currencies-url"]');
+      if (getCurrenciesUrlMeta) {
+        getCurrenciesUrl = getCurrenciesUrlMeta.getAttribute('content');
+      }
+      
+      fetch(getCurrenciesUrl)
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === 'success') {
+            updateCurrencyTable(data.currencies);
+          } else {
+            console.error('Failed to load currencies:', data.message);
+          }
+        })
+        .catch(error => {
+          console.error('Error loading currencies:', error);
+        });
+    }
+
+    function updateCurrencyTable(currencies) {
+      const currencyTable = document.getElementById('currency-table');
+      if (!currencyTable) return;
+      
+      if (currencies && currencies.length > 0) {
+        currencyTable.innerHTML = currencies.map(currency => {
+          const lastUpdated = new Date(currency.last_updated).toLocaleString();
+          
+          return `
+            <tr>
+              <td>${currency.currency_code}</td>
+              <td>${currency.exchange_rate}</td>
+              <td>${lastUpdated}</td>
+              <td>
+                <button class="btn btn-danger btn-sm" onclick="deleteCurrency(${currency.id})">Delete</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } else {
+        currencyTable.innerHTML = '<tr><td colspan="4" class="text-center">No currency available</td></tr>';
+      }
+    }
+
     document.getElementById('saveCurrency').addEventListener('click', () => {
-      const currencyName = document.getElementById('currency').value;
+      const selectedCurrency = document.getElementById('currency').value;
+      const newCurrencyCode = document.getElementById('newCurrencyCode').value.trim();
+      const exchangeRate = document.getElementById('exchangeRate').value;
+
+      if (!selectedCurrency && !newCurrencyCode) {
+        alert('Please select a currency or enter a new currency code');
+        return;
+      }
+      
+      if (!exchangeRate) {
+        alert('Please enter an exchange rate');
+        return;
+      }
 
       let addCurrencyUrl = 'add-currency/';
       const addCurrencyUrlMeta = document.querySelector('meta[name="add-currency-url"]');
@@ -1908,26 +2091,31 @@
         addCurrencyUrl = addCurrencyUrlMeta.getAttribute('content');
       }
 
+      document.getElementById('saveCurrency').blur();
+      const modal = bootstrap.Modal.getInstance(document.getElementById('addCurrencyModal'));
+      modal.hide();
+
       fetch(addCurrencyUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
-          'name': currencyName
+          'currency_id': selectedCurrency,
+          'currency_code': newCurrencyCode,
+          'exchange_rate': exchangeRate,
         })
       })
       .then(response => response.json())
       .then(data => {
         if (data.status === 'success') {
-          updateCategoryTables();
-        } else if(data.status === 'exists'){
-            alert("Currency already exists");          
-        }else {
+          loadCurrencies();
+          // window.location.reload();
+        } else if(data.status === 'exists') {
+          alert("Currency already exists");          
+        } else {
           alert(data.message);
         }
-        const modal = bootstrap.Modal.getInstance(document.getElementById('addCurrencyModal'));
-        modal.hide();
       })
       .catch(error => {
         alert('Error when adding currency');
@@ -1946,7 +2134,7 @@
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: `id=${id}`
+        body: `currency_id=${currencyId}`
       })
       .then(response => response.json())
       .then(data => {
@@ -2145,6 +2333,10 @@
         addAccountUrl = addAccountUrlMeta.getAttribute('content');
       }
 
+      document.getElementById('saveAccount').blur();
+      const modal = bootstrap.Modal.getInstance(document.getElementById('addAccountModal'));
+      modal.hide();
+
       fetch(addAccountUrl, {
         method: 'POST',
         headers: {
@@ -2160,14 +2352,11 @@
       .then(data => {
         if (data.status === 'success') {
           loadAccounts();
-          document.getElementById('saveAccount').blur();
         } else if(data.status === 'exists'){
             alert("Account already exists");          
         }else {
           alert(data.message);
         }
-        const modal = bootstrap.Modal.getInstance(document.getElementById('addAccountModal'));
-        modal.hide();
       })
       .catch(error => {
         console.error('Error when adding account:', error);
@@ -2339,6 +2528,14 @@
 
       if (document.getElementById('budget-table')) {
         loadBudgets();
+      }
+
+      if(document.getElementById('currency-table')){
+        loadCurrencies();
+      }
+
+      if (document.getElementById('currency')) {
+        loadAvailableCurrencies();
       }
 
       if (document.getElementById('account-table')) {

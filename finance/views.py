@@ -483,6 +483,7 @@ def add_category(request):
 
     category, created = Category.objects.get_or_create(
         name=category_name,
+        user=request.user,
         defaults={'is_income': is_income}
     )
 
@@ -662,22 +663,126 @@ def get_budgets_view(request):
         
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': f'獲取預算時發生錯誤: {str(e)}'}, status=500)
+    
+@login_required
+def get_currencies_view(request):
+    try:
+        system_currencies = Currency.objects.filter(user=None)
+        user_currencies = Currency.objects.filter(user=request.user)
+        
+        currencies_list = []
+        
+        for currency in system_currencies:
+            currencies_list.append({
+                'id': currency.id,
+                'currency_code': currency.currency_code,
+                'exchange_rate': float(currency.exchange_rate),
+                'last_updated': currency.last_updated.isoformat(),
+                'is_system': True
+            })
+        
+        for currency in user_currencies:
+            currencies_list.append({
+                'id': currency.id,
+                'currency_code': currency.currency_code,
+                'exchange_rate': float(currency.exchange_rate),
+                'last_updated': currency.last_updated.isoformat(),
+                'is_system': False
+            })
+        
+        return JsonResponse({
+            'status': 'success',
+            'currencies': currencies_list
+        })
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
+
+@login_required
+def get_available_currencies_view(request):
+    try:
+        system_currencies = Currency.objects.filter(user=None)
+        user_currencies = Currency.objects.filter(user=request.user)
+        
+        currencies_list = []
+        
+        for currency in list(system_currencies):
+            currencies_list.append({
+                'id': currency.id,
+                'currency_code': currency.currency_code,
+                'exchange_rate': float(currency.exchange_rate),
+                'user': None
+            })
+        
+        for currency in list(user_currencies):
+            currencies_list.append({
+                'id': currency.id,
+                'currency_code': currency.currency_code,
+                'exchange_rate': float(currency.exchange_rate),
+                'user': request.user.id
+            })
+        
+        return JsonResponse({
+            'status': 'success',
+            'currencies': currencies_list
+        })
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
 
 @csrf_exempt
+@login_required
 def add_currency_view(request):
     if request.method == 'POST':
+        currency_id = request.POST.get('currency_id')
         currency_code = request.POST.get('currency_code')
-        # exchange_rate = request.POST.get('exchange_rate')
+        exchange_rate = request.POST.get('exchange_rate')
+        
+        if not exchange_rate:
+            return JsonResponse({'status': 'error', 'message': 'Exchange rate is required'}, status=400)
         
         try:
-            currency = Currency.objects.create(
-                currency_code=currency_code,
-                # exchange_rate=exchange_rate
-            )
-            return JsonResponse({'status': 'success', 'message': 'Currency added successfully'})
+            if currency_id:
+                system_currency = Currency.objects.get(id=currency_id)
+                
+                user_currency, created = Currency.objects.get_or_create(
+                    user=request.user,
+                    currency_code=system_currency.currency_code,
+                    defaults={'exchange_rate': exchange_rate}
+                )
+                
+                if not created:
+                    user_currency.exchange_rate = exchange_rate
+                    user_currency.save()
+                
+                return JsonResponse({'status': 'success', 'message': 'Currency rate updated successfully'})
+            
+            elif currency_code:
+                user_currency, created = Currency.objects.get_or_create(
+                    user=request.user,
+                    currency_code=currency_code,
+                    defaults={'exchange_rate': exchange_rate}
+                )
+                
+                if not created:
+                    user_currency.exchange_rate = exchange_rate
+                    user_currency.save()
+                    return JsonResponse({'status': 'success', 'message': 'Currency rate updated successfully'})
+                
+                return JsonResponse({'status': 'success', 'message': 'Currency added successfully'})
+            
+            else:
+                return JsonResponse({'status': 'error', 'message': 'Currency selection or code is required'}, status=400)
+                
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': f'Add currency failed: {str(e)}'}, status=500)
+    
     return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
+
 
 @csrf_exempt
 def delete_currency_view(request):
@@ -693,6 +798,13 @@ def delete_currency_view(request):
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': f'Delete currency failed: {str(e)}'}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
+
+@csrf_exempt
+def get_available_currencies(request):
+    system_currencies = Currency.objects.filter(user=None)
+    user_currencies = Currency.objects.filter(user=request.user)
+    all_currencies = list(system_currencies) + list(user_currencies)
+    return all_currencies
 
 @csrf_exempt
 def add_account_view(request):
