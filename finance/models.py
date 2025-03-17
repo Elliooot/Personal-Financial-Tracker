@@ -39,6 +39,10 @@ class Account(models.Model):
     account_name = models.CharField(max_length=255)
     account_type = models.CharField(max_length=50, choices=ACCOUNT_TYPE_CHOICES)
     balance = models.DecimalField(max_digits=15, decimal_places=2)
+    order = models.IntegerField(default=0)
+
+    class Meta:
+        ordering = ['order', 'id']
 
     def __str__(self) -> str:
         return self.account_name

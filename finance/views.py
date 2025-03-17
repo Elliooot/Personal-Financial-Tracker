@@ -761,6 +761,24 @@ def get_accounts_view(request):
     except Exception as e:
         print(f"Error in get_accounts_view: {str(e)}")
         return JsonResponse({'status': 'error', 'message': f'Get accounts failed: {str(e)}'}, status=500)
+    
+@csrf_exempt
+@login_required
+def order_accounts_view(request): 
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            account_ids = data.get('account_ids', [])
+            
+            if not account_ids:
+                return JsonResponse({'status': 'error', 'message': 'Account IDs are required'}, status=400)
+            
+            for order, account_id in enumerate(account_ids):
+                Account.objects.filter(id=account_id, user=request.user).update(order=order)
+            
+            return JsonResponse({'status': 'success', 'message': 'Account orders updated successfully'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'Update account orders failed: {str(e)}'}, status=500)
 
 
 def get_transaction_dates(request):

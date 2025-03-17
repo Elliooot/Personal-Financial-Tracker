@@ -19,6 +19,7 @@
   <meta name="add-account-url" content="{% url 'add_account' %}">
   <meta name="delete-account-url" content="{% url 'delete_account' %}">
   <meta name="get-accounts-url" content="{% url 'get_accounts' %}">
+  <meta name="order-accounts-url" content="{% url 'order_accounts' %}">
   <title>{% block title %}Wallet Notes{% endblock %}</title>
   <link rel="icon" type="image/jpeg" href="{% static 'img/favicon.jpg' %}">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -131,6 +132,26 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+    }
+    .drag-handle {
+      cursor: grab;
+      padding: 6px 8px;
+      display: inline-block;
+      vertical-align: middle;
+      color: #6c757d;
+    }
+    .drag-handle:hover {
+      color: #333;
+    }
+    .dragging {
+      opacity: 0.5;
+      background-color: #f8f9fa;
+    }
+    .drop-target {
+      border-top: 2px solid #0d6efd;
+    }
+    .sortable-table tr {
+      transition: all 0.2s ease;
     }
   </style>
 </head>
@@ -1984,24 +2005,134 @@
       
       if (window.accounts.length > 0) {
         let tableContent = '';
-        window.accounts.forEach(account => {
+        window.accounts.forEach((account, index) => {
           tableContent += `
-            <tr>
+            <tr data-account-id="${account.id}" data-index="${index}">
               <td>${account.account_name}</td>
               <td>${account.account_type}</td>
               <td>£${account.balance}</td>
               <td>
                 <button class="btn btn-danger btn-sm" onclick="deleteAccount(${account.id})">Delete</button>
+                <span class="drag-handle"><i class="bi bi-list"></i></span>
               </td>
             </tr>
           `;
         });
         accountTable.innerHTML = tableContent;
+      
+        // initialize drag functionality
+        initDragAndDrop();
       } else {
         accountTable.innerHTML = '<tr><td colspan="4" class="text-center">No accounts available</td></tr>';
       }
     }
 
+    function initDragAndDrop() {
+      const table = document.getElementById('account-table');
+      const rows = table.querySelectorAll('tr[data-account-id]');
+      let draggedRow = null;
+      
+      // Add event listeners to each row
+      rows.forEach(row => {
+        const handle = row.querySelector('.drag-handle');
+        
+        if (!handle) return;
+        
+        // ensure only draggable when handle is clicked
+        handle.addEventListener('mousedown', () => {
+          row.setAttribute('draggable', 'true');
+        });
+        
+        row.addEventListener('mouseup', () => {
+          row.setAttribute('draggable', 'false');
+        });
+        
+        row.addEventListener('dragstart', (e) => {
+          draggedRow = row;
+          row.classList.add('dragging');
+          
+          // 為了解決Firefox拖曳問題
+          e.dataTransfer.setData('text/plain', '');
+        });
+        
+        row.addEventListener('dragend', () => {
+          row.classList.remove('dragging');
+          draggedRow = null;
+          
+          rows.forEach(r => r.classList.remove('drop-target'));
+        });
+        
+        row.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          if (!draggedRow || row === draggedRow) return;
+          
+          // add drop-target class to row
+          rows.forEach(r => r.classList.remove('drop-target'));
+          row.classList.add('drop-target');
+        });
+        
+        row.addEventListener('drop', (e) => {
+          e.preventDefault();
+          if (!draggedRow || row === draggedRow) return;
+          
+          // 獲取行索引
+          const fromIndex = parseInt(draggedRow.getAttribute('data-index'));
+          const toIndex = parseInt(row.getAttribute('data-index'));
+          
+          // 重新排序 accounts 數組
+          const movedAccount = window.accounts.splice(fromIndex, 1)[0];
+          window.accounts.splice(toIndex, 0, movedAccount);
+          
+          // 更新表格顯示
+          updateAccountTable();
+          
+          // 直接保存排序到後端，不顯示保存按鈕
+          saveAccountOrderToBackend();
+        });
+      });
+      
+      // 保存順序按鈕事件
+      const saveButton = document.getElementById('saveAccountOrder');
+      if (saveButton) {
+        // 移除舊的事件監聽器
+        const newSaveButton = saveButton.cloneNode(true);
+        saveButton.parentNode.replaceChild(newSaveButton, saveButton);
+        
+        // 添加新的事件監聽器
+        newSaveButton.addEventListener('click', saveAccountOrder);
+      }
+    }
+    
+    function saveAccountOrderToBackend() {
+      const accountIds = window.accounts.map(a => a.id);
+
+      let orderAccountUrl = 'order-accounts/';
+      const orderAccountUrlMeta = document.querySelector('meta[name="order-accounts-url"]');
+      if (orderAccountUrlMeta) {
+        orderAccountUrl = orderAccountUrlMeta.getAttribute('content');
+      }
+      
+      // 使用 fetch API 發送排序數據到後端
+      fetch(orderAccountUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          account_ids: accountIds
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status !== 'success') {
+          console.error('Failed to save account order:', data.message);
+          alert('Failed to order: ' + data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error saving account order:', error);
+      });
+    }
 
     document.getElementById('saveAccount').addEventListener('click', () => {
       const accountName = document.getElementById('accountName').value;
