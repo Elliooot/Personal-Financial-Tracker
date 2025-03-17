@@ -79,7 +79,7 @@ def create_default_currencies(sender, instance, created, **kwargs):
                         exchange_rate = 1.0  # Default fallback
                 
                 # Create the currency for this user
-                Currency.objects.create(
+                Currency.objects.get_or_create(
                     user=instance,
                     currency_code=currency_code,
                     exchange_rate=exchange_rate
