@@ -298,7 +298,8 @@ def statistics_view(request):
 
 def get_transaction_dates(request):
     # Get Year and Month from Transactions
-    transactions = Transaction.objects.all()
+    transactions = Transaction.objects.filter(user=request.user)
+    # transactions = Transaction.objects.all()
     
     months_by_year = {}
     years = set()
@@ -324,6 +325,8 @@ def get_transaction_dates(request):
     })
 
 def get_statistics_data(request):
+    transactions = Transaction.objects.filter(user=request.user)
+
     try:
         year = request.GET.get('year')
         month = request.GET.get('month')
@@ -340,9 +343,9 @@ def get_statistics_data(request):
         total_budget = 0
 
         try:
-            base_query = Transaction.objects.filter(date__year=year)
+            base_query = transactions.filter(date__year=year)
         except Exception:
-            base_query = Transaction.objects.none()
+            base_query = transactions.none()
 
         # handle monthly view
         if mode == 'month' and month:
