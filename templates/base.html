@@ -435,29 +435,17 @@
         <div class="modal-body">
           <form id="addCurrencyForm">
             <div class="mb-3">
-              <label for="currency" class="form-label">Currency</label>
+              <label for="currencySelect" class="form-label">Select Currency</label>
               <select class="form-control" id="currencySelect">
                 <option value="">-- Select Currency --</option>
-                <optgroup label="System Currencies">
-                  <option value="GBP">GBP</option>
-                  <option value="EUR">EUR</option>
-                  <option value="USD">USD</option>
-                </optgroup>
+                <!-- 這裡將通過 JavaScript 填充其他主要貨幣 -->
               </select>
             </div>
-            <div class="mb-3">
-              <label for="newCurrencyCode" class="form-label">Or Add New Currency Code</label>
-              <input type="text" class="form-control" id="newCurrencyCode" placeholder="e.g. JPY">
-            </div>
-            <div class="mb-3">
-              <label for="exchangeRate" class="form-label">Exchange Rate</label>
-              <input type="number" step="0.0001" class="form-control" id="exchangeRate" required>
-            </div>
           </form>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            <button type="button" class="btn btn-primary" id="saveCurrency">Save</button>
-          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" id="saveCurrency">Add</button>
         </div>
       </div>
     </div>
@@ -1766,6 +1754,49 @@
       updateBudgetTable();
     }
 
+    const majorCurrencies = [
+      { code: 'JPY', name: 'Japanese Yen' },
+      { code: 'CNY', name: 'Chinese Yuan' },
+      { code: 'HKD', name: 'Hong Kong Dollar' },
+      { code: 'TWD', name: 'Taiwan Dollar' },
+      { code: 'CAD', name: 'Canadian Dollar' },
+      { code: 'AUD', name: 'Australian Dollar' },
+      { code: 'SGD', name: 'Singapore Dollar' },
+      { code: 'CHF', name: 'Swiss Franc' },
+      { code: 'KRW', name: 'South Korean Won' },
+      { code: 'INR', name: 'Indian Rupee' },
+      { code: 'BRL', name: 'Brazilian Real' },
+      { code: 'RUB', name: 'Russian Ruble' }
+    ];
+
+    function populateCurrencyDropdown() {
+      const currencySelect = document.getElementById('currencySelect');
+      if (!currencySelect) return;
+      
+      // 清空現有選項，保留默認選項
+      currencySelect.innerHTML = '<option value="">-- Select Currency --</option>';
+      
+      // 獲取已經顯示在表格中的貨幣
+      const existingCurrencies = Array.from(document.querySelectorAll('#currency-table tr'))
+        .map(row => {
+          const firstCell = row.querySelector('td');
+          return firstCell ? firstCell.textContent.trim() : '';
+        })
+        .filter(code => code !== '');
+      
+      console.log('Existing currencies:', existingCurrencies);
+      
+      // 添加主要貨幣，排除已存在的
+      majorCurrencies
+        .filter(currency => !existingCurrencies.includes(currency.code))
+        .forEach(currency => {
+          const option = document.createElement('option');
+          option.value = currency.code;
+          option.textContent = `${currency.code} - ${currency.name}`;
+          currencySelect.appendChild(option);
+        });
+    }
+
     function openAddCurrencyModal() {
       if (document.getElementById('newCurrencyCode')) {
         document.getElementById('newCurrencyCode').value = '';
@@ -1774,10 +1805,10 @@
         document.getElementById('exchangeRate').value = '';
       }
       
+      populateCurrencyDropdown();
+      
       const addCurrencyModal = new bootstrap.Modal(document.getElementById('addCurrencyModal'));
       addCurrencyModal.show();
-      
-      loadAvailableCurrencies();
     }
 
     function openAddAccountModal() {
@@ -2060,7 +2091,7 @@
         currencies.forEach(currency => {
           let lastUpdated = 'N/A';
           try {
-            lastUpdated = new Date(currency.last_updated).toLocaleString();
+            lastUpdated = new Date(currency.last_updated).toLocaleString('en-US');
           } catch (e) {
             console.error('Error formatting date:', e);
           }
@@ -2085,20 +2116,13 @@
     }
 
     document.getElementById('saveCurrency').addEventListener('click', () => {
-      const selectedCurrency = document.getElementById('currency').value;
-      const newCurrencyCode = document.getElementById('newCurrencyCode').value.trim();
-      const exchangeRate = document.getElementById('exchangeRate').value;
-
-      if (!selectedCurrency && !newCurrencyCode) {
-        alert('Please select a currency or enter a new currency code');
+      const selectedCurrency = document.getElementById('currencySelect').value;
+      
+      if (!selectedCurrency) {
+        alert('Please select a currency');
         return;
       }
       
-      if (!exchangeRate) {
-        alert('Please enter an exchange rate');
-        return;
-      }
-
       let addCurrencyUrl = 'add-currency/';
       const addCurrencyUrlMeta = document.querySelector('meta[name="add-currency-url"]');
       if (addCurrencyUrlMeta) {
@@ -2108,36 +2132,36 @@
       document.getElementById('saveCurrency').blur();
       const modal = bootstrap.Modal.getInstance(document.getElementById('addCurrencyModal'));
       modal.hide();
-
+      
+      // 發送請求 - 匯率將由後端 API 自動設置
       fetch(addCurrencyUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
-          'currency_id': selectedCurrency,
-          'currency_code': newCurrencyCode,
-          'exchange_rate': exchangeRate,
+          'currency_code': selectedCurrency
         })
       })
       .then(response => response.json())
       .then(data => {
         if (data.status === 'success') {
+          // 刷新貨幣表格
           loadCurrencies();
-          // window.location.reload();
         } else if(data.status === 'exists') {
-          alert("Currency already exists");          
+          alert("Currency already exists");
         } else {
           alert(data.message);
         }
       })
       .catch(error => {
+        console.error('Error:', error);
         alert('Error when adding currency');
       });
     });
 
     function deleteCurrency(id) {
-      const deleteCurrencyUrl = 'delete-currency/';
+      let deleteCurrencyUrl = 'delete-currency/';
       const deleteCurrencyUrlMeta = document.querySelector('meta[name="delete-currency-url"]');
       if (deleteCurrencyUrlMeta) {
         deleteCurrencyUrl = deleteCurrencyUrlMeta.getAttribute('content');
@@ -2148,20 +2172,69 @@
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: `currency_id=${currencyId}`
+        body: `currency_id=${id}`
       })
-      .then(response => response.json())
+      .then(response => {
+        if (!response.ok) {
+          return response.json().then(errorData => {
+            throw new Error(errorData.message || 'Network response was not ok');
+          });
+        }
+        return response.json();
+      })
       .then(data => {
         if (data.status === 'success') {
-          window.currencies = window.currencies.filter(c => c.id !== id);
-          updateCategoryTables();
+          loadCurrencies(); // 重新加載貨幣列表以確保同步
+          showSuccessMessage('Currency deleted successfully');
         } else {
-          alert(data.message);
+          // 對於服務器返回的失敗狀態，顯示具體錯誤信息
+          throw new Error(data.message || 'Failed to delete currency');
         }
       })
       .catch(error => {
-        alert('Error when deleting currency');
+        console.error('Delete currency error:', error);
+        
+        // 只有在特定錯誤情況下才移除貨幣
+        if (error.message.includes('Currency not found')) {
+          window.currencies = window.currencies.filter(c => c.id !== id);
+          updateCategoryTables();
+        }
+        
+        // 顯示更具體的錯誤信息
+        showErrorMessage(error.message || 'Error when deleting currency');
       });
+    }
+
+    // Helper function to show success messages
+    function showSuccessMessage(message) {
+      const messageContainer = document.getElementById('message-container');
+      if (messageContainer) {
+        messageContainer.innerHTML = `
+          <div class="alert alert-success" role="alert">
+            ${message}
+          </div>
+        `;
+        // Optional: Auto-hide the message after a few seconds
+        setTimeout(() => {
+          messageContainer.innerHTML = '';
+        }, 3000);
+      }
+    }
+
+    // Helper function to show error messages
+    function showErrorMessage(message) {
+      const messageContainer = document.getElementById('message-container');
+      if (messageContainer) {
+        messageContainer.innerHTML = `
+          <div class="alert alert-danger" role="alert">
+            ${message}
+          </div>
+        `;
+        // Optional: Auto-hide the message after a few seconds
+        setTimeout(() => {
+          messageContainer.innerHTML = '';
+        }, 3000);
+      }
     }
 
     function loadAccounts() {
@@ -2253,7 +2326,6 @@
           draggedRow = row;
           row.classList.add('dragging');
           
-          // 為了解決Firefox拖曳問題
           e.dataTransfer.setData('text/plain', '');
         });
         
@@ -2545,7 +2617,6 @@
       }
 
       if(document.getElementById('currency-table')){
-        console.log('Loading currencies for table...');
         loadCurrencies();
       }
 

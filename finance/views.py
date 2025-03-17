@@ -3,7 +3,7 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
-from django.db.models import Count, Sum
+from django.db.models import Q, Count, Sum
 from finance.forms import CategoryForm, TransactionForm
 from finance.models import User, Account, Category, Transaction, Currency, Budget
 from django.contrib import messages
@@ -452,6 +452,17 @@ def management_view(request):
         'false': expense_categories_list
     }
 
+    currencies = Currency.objects.filter(Q(user=None) | Q(user=request.user))
+    
+    currencies_data = [
+        {
+            'id': c.id,
+            'currency_code': c.currency_code,
+            'exchange_rate': str(c.exchange_rate),
+            'is_system': c.user is None
+        } for c in currencies
+    ]
+
     accounts = Account.objects.filter(user=request.user)
 
     accounts_data = [
@@ -469,6 +480,7 @@ def management_view(request):
         'categories_json': json.dumps(categories_data),
         # 'income_categories_list': json.dumps(income_categories_list),
         # 'expense_categories_list': json.dumps(expense_categories_list)
+        'currencies_json': currencies_data,
         'accounts_json': accounts_data,
     })
 
@@ -738,51 +750,37 @@ def get_available_currencies_view(request):
 @login_required
 def add_currency_view(request):
     if request.method == 'POST':
-        currency_id = request.POST.get('currency_id')
         currency_code = request.POST.get('currency_code')
-        exchange_rate = request.POST.get('exchange_rate')
         
-        if not exchange_rate:
-            return JsonResponse({'status': 'error', 'message': 'Exchange rate is required'}, status=400)
+        if not currency_code:
+            return JsonResponse({'status': 'error', 'message': 'Currency code is required'}, status=400)
         
         try:
-            if currency_id:
-                system_currency = Currency.objects.get(id=currency_id)
-                
-                user_currency, created = Currency.objects.get_or_create(
-                    user=request.user,
-                    currency_code=system_currency.currency_code,
-                    defaults={'exchange_rate': exchange_rate}
-                )
-                
-                if not created:
-                    user_currency.exchange_rate = exchange_rate
-                    user_currency.save()
-                
-                return JsonResponse({'status': 'success', 'message': 'Currency rate updated successfully'})
+            # 檢查貨幣是否已存在
+            if Currency.objects.filter(currency_code=currency_code).exists():
+                return JsonResponse({'status': 'exists', 'message': 'Currency already exists'})
             
-            elif currency_code:
-                user_currency, created = Currency.objects.get_or_create(
-                    user=request.user,
-                    currency_code=currency_code,
-                    defaults={'exchange_rate': exchange_rate}
-                )
-                
-                if not created:
-                    user_currency.exchange_rate = exchange_rate
-                    user_currency.save()
-                    return JsonResponse({'status': 'success', 'message': 'Currency rate updated successfully'})
-                
-                return JsonResponse({'status': 'success', 'message': 'Currency added successfully'})
+            # 從 API 獲取匯率 (這裡是示例，實際實現可能不同)
+            exchange_rate = get_exchange_rate_from_api(currency_code)
             
-            else:
-                return JsonResponse({'status': 'error', 'message': 'Currency selection or code is required'}, status=400)
-                
+            # 創建新貨幣
+            Currency.objects.create(
+                currency_code=currency_code,
+                exchange_rate=exchange_rate
+            )
+            
+            return JsonResponse({'status': 'success', 'message': 'Currency added successfully'})
+        
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': f'Add currency failed: {str(e)}'}, status=500)
     
     return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
 
+def get_exchange_rate_from_api(currency_code):
+    # 實際應用中，您會調用外部 API
+    # 這裡只是一個示例，返回一個隨機值作為匯率
+    import random
+    return round(random.uniform(0.5, 2.0), 4)
 
 @csrf_exempt
 def delete_currency_view(request):

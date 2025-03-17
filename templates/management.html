@@ -142,6 +142,7 @@
 {% endblock %}
 
 {% block page_scripts %}
+  {{ currencies_json|default:"[]"|json_script:"currencies_data" }}
   {{ accounts_json|default:"[]"|json_script:"accounts_data" }}
 <script>
   // 直接設置類別數據
