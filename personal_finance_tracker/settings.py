@@ -137,7 +137,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'finance.User'
 
 # Open Exchange Rates API key
-OPENEXCHANGERATES_API_KEY = '4746be01daf7486b98a44ec9f14fa792'  # Replace with your actual API key
+OPENEXCHANGERATES_API_KEY = os.environ.get('API_KEY')  # Replace with your actual API key
 
 # Set GBP as the default/base currency
 DEFAULT_CURRENCY = 'GBP'
