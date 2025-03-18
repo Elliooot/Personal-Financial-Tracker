@@ -40,7 +40,7 @@ jobs:
         run: python manage.py migrate
 
       - name: Populate default database
-        run: python manage.py loaddata data.json --ignore-conflicts
+        run: python manage.py loaddata data.json
  
       - name: Collect static files
         run: python manage.py collectstatic --noinput
