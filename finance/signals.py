@@ -1,7 +1,7 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.contrib.auth import get_user_model
-from finance.models import Category, Currency
+from finance.models import Category, Currency, Account
 import logging
 from finance.currency_utils import get_exchange_rate_with_gbp_base
 
@@ -73,3 +73,22 @@ def create_default_currencies(sender, instance, created, **kwargs):
                 logger.info(f"Ensured system default currency {currency_code} exists.")
             except Exception as e:
                 logger.error(f"Error ensuring default currency {currency_code}: {str(e)}")
+
+@receiver(post_save, sender=User)
+def create_default_account(sender, instance, created, **kwargs):
+    """
+    Create a default Cash account with a balance of 100 for new users.
+    """
+    if created:  # only create default account for new users
+        try:
+            # Create a Cash account with initial balance of 100
+            Account.objects.create(
+                user=instance,
+                account_name="Cash",
+                account_type="Cash",
+                balance=100.00,
+                order=0  # Make it the first account in order
+            )
+            logger.info(f"Created default Cash account for user {instance.username}")
+        except Exception as e:
+            logger.error(f"Error creating default Cash account for user {instance.username}: {str(e)}")
