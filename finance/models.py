@@ -22,7 +22,7 @@ class User(AbstractUser):
 
 class Currency(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
-    currency_code = models.CharField(max_length=10, unique=True)
+    currency_code = models.CharField(max_length=10)
     exchange_rate = models.DecimalField(max_digits=10, decimal_places=4)
     last_updated = models.DateTimeField(auto_now=True)
     
