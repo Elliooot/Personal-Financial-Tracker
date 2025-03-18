@@ -155,6 +155,119 @@
     .sortable-table tr {
       transition: all 0.2s ease;
     }
+    /* Theme toggle button styles */
+    .theme-toggle-btn {
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 5px;
+    }
+
+    .theme-toggle-btn:hover {
+      background: #495057;
+    }
+
+    /* Light/Dark mode variables */
+    :root {
+      /* Light mode (default) */
+      --bg-color: #ffffff;
+      --text-color: #212529;
+      --sidebar-bg: #343a40;
+      --sidebar-text: #ffffff;
+      --card-bg: #f8f9fa;
+      --border-color: #dee2e6;
+      --primary-color: #0d6efd;
+      --secondary-color: #6c757d;
+      --success-color: #198754;
+      --danger-color: #dc3545;
+      --warning-color: #ffc107;
+      --info-color: #0dcaf0;
+      --light-color: #f8f9fa;
+      --dark-color: #212529;
+      --table-stripe: rgba(0, 0, 0, 0.05);
+      --input-bg: #ffffff;
+      --modal-bg: #ffffff;
+    }
+
+    /* Dark mode class that we'll toggle with JavaScript */
+    [data-theme="dark"] {
+      --bg-color: #212529;
+      --text-color: #f8f9fa;
+      --sidebar-bg: #121212;
+      --sidebar-text: #ffffff;
+      --card-bg: #2c3034;
+      --border-color: #495057;
+      --primary-color: #0d6efd;
+      --secondary-color: #6c757d;
+      --success-color: #198754;
+      --danger-color: #dc3545;
+      --warning-color: #ffc107;
+      --info-color: #0dcaf0;
+      --light-color: #343a40;
+      --dark-color: #f8f9fa;
+      --table-stripe: rgba(255, 255, 255, 0.05);
+      --input-bg: #2c3034;
+      --modal-bg: #343a40;
+    }
+
+    /* Apply theme variables to elements */
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .sidebar {
+      background-color: var(--sidebar-bg);
+      color: var(--sidebar-text);
+    }
+
+    .card, .list-group-item {
+      background-color: var(--card-bg);
+      border-color: var(--border-color);
+    }
+
+    .table {
+      color: var(--text-color);
+    }
+
+    .table-striped tbody tr:nth-of-type(odd) {
+      background-color: var(--table-stripe);
+    }
+
+    .modal-content {
+      background-color: var(--modal-bg);
+      color: var(--text-color);
+    }
+
+    input, select, textarea, .form-control {
+      background-color: var(--input-bg);
+      color: var(--text-color);
+      border-color: var(--border-color);
+    }
+
+    /* Show/hide theme icons */
+    [data-theme="dark"] .light-icon {
+      display: none;
+    }
+
+    [data-theme="dark"] .dark-icon {
+      display: block !important;
+    }
+
+    [data-theme="light"] .light-icon {
+      display: block;
+    }
+
+    [data-theme="light"] .dark-icon {
+      display: none !important;
+    }
   </style>
 </head>
 <body>
@@ -165,6 +278,10 @@
         <div class="title-container">
           <button class="hamburger-btn">
             <i class="bi bi-list"></i>
+          </button>
+          <button id="theme-toggle" class="theme-toggle-btn">
+            <i class="bi bi-sun-fill light-icon"></i>
+            <i class="bi bi-moon-fill dark-icon d-none"></i>
           </button>
           <h4>Wallet Notes</h4>
         </div>
@@ -284,7 +401,8 @@
             <div class="mb-3">
               <label for="addCurrency" class="form-label">Currency</label>
               <select class="form-select" id="addCurrency">
-                <option value="">-- Select Currency --</option>
+                <option value="GBP" selected>GBP</option>
+                <!-- <option value="">-- Select Currency --</option> -->
               </select>
             </div>
             <div class="mb-3">
@@ -732,6 +850,61 @@
         });
     }
 
+    // Populate transaction currency dropdowns with user's currencies
+    function populateTransactionCurrencyDropdowns() {
+      // Get the currency dropdown elements
+      const addCurrencyDropdown = document.getElementById('addCurrency');
+      const editCurrencyDropdown = document.getElementById('editCurrency');
+      
+      if (!addCurrencyDropdown && !editCurrencyDropdown) return;
+      
+      // Get currencies URL
+      let getCurrenciesUrl = 'get-currencies/';
+      const getCurrenciesUrlMeta = document.querySelector('meta[name="get-currencies-url"]');
+      if (getCurrenciesUrlMeta) {
+        getCurrenciesUrl = getCurrenciesUrlMeta.getAttribute('content');
+      }
+      
+      // Fetch currencies from the server
+      fetch(getCurrenciesUrl)
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === 'success' && data.currencies && Array.isArray(data.currencies)) {
+            // Store currencies globally for other functions to use
+            window.userCurrencies = data.currencies;
+            
+            // Update the Add Transaction dropdown
+            if (addCurrencyDropdown) {
+              addCurrencyDropdown.innerHTML = '<option value="GBP">GBP</option>';
+              data.currencies.forEach(currency => {
+                const option = document.createElement('option');
+                option.value = currency.currency_code;
+                option.textContent = currency.currency_code;
+                if(option.value !== 'GBP') {
+                  addCurrencyDropdown.appendChild(option);
+                }
+              });
+            }
+            
+            // Update the Edit Transaction dropdown
+            if (editCurrencyDropdown) {
+              editCurrencyDropdown.innerHTML = '';
+              data.currencies.forEach(currency => {
+                const option = document.createElement('option');
+                option.value = currency.currency_code;
+                option.textContent = currency.currency_code;
+                editCurrencyDropdown.appendChild(option);
+              });
+            }
+          } else {
+            console.error('Failed to load currencies for transaction dropdowns:', data);
+          }
+        })
+        .catch(error => {
+          console.error('Error loading currencies for transaction dropdowns:', error);
+        });
+    }
+
     // Open Add Transaction Modal
     function openAddModal() {
       // Set current date as default
@@ -746,8 +919,7 @@
       // Update dropdowns with latest data
       updateCategoryDropdown();
       updateAccountDropdown();
-      updateTransactionCurrencyDropdown('addCurrency');
-      // populateCurrencyDropdown();
+      populateTransactionCurrencyDropdowns();
       
       // Show modal
       const addModal = new bootstrap.Modal(document.getElementById('addModal'));
@@ -771,6 +943,8 @@
       
       // Update category dropdown based on transaction type
       updateEditCategoryDropdown(transaction.transaction_type ? "true" : "false");
+
+      populateTransactionCurrencyDropdowns();
       
       // Set values after dropdowns are populated
       setTimeout(() => {
@@ -1561,46 +1735,6 @@
       const addModal = bootstrap.Modal.getInstance(document.getElementById('addModal'));
       addModal.hide();
     });
-
-    // 用於添加交易表單的貨幣下拉框更新
-    function updateTransactionCurrencyDropdown(elementId) {
-      const currencyDropdown = document.getElementById(elementId);
-      if (!currencyDropdown) return;
-      
-      // 保留現有選項
-      currencyDropdown.innerHTML = '';
-      
-      // 添加默認選項
-      const defaultOption = document.createElement('option');
-      defaultOption.value = '';
-      defaultOption.textContent = '-- Select Currency --';
-      currencyDropdown.appendChild(defaultOption);
-      
-      // 添加系統和用戶貨幣
-      if (!window.currencies || !Array.isArray(window.currencies) || window.currencies.length === 0) {
-        const basicCurrencies = ['GBP', 'EUR', 'USD', 'TWD'];
-        basicCurrencies.forEach(code => {
-          const option = document.createElement('option');
-          option.value = code;
-          option.textContent = code;
-          currencyDropdown.appendChild(option);
-        });
-        
-        console.log('Using basic default currencies');
-      } else {
-        window.currencies.forEach(currency => {
-          const option = document.createElement('option');
-          option.value = currency.currency_code;
-          option.textContent = currency.currency_code;
-          currencyDropdown.appendChild(option);
-        });
-        
-        console.log('Using server-loaded currencies:', window.currencies.length);
-      }
-      
-      console.log('Updated currency dropdown:', elementId);
-      console.log('Options count:', currencyDropdown.options.length);
-    }
 
     function updateCategoryTables() {
       const incomeTable = document.getElementById('income-categories-table');
@@ -2757,6 +2891,7 @@
         filterCategory();
         updateCategoryDropdown(); // Refresh drop-down box
         updateAccountDropdown();
+        populateTransactionCurrencyDropdowns();
       }
       
       if(document.getElementById('management-page')){
@@ -2781,15 +2916,50 @@
 
       // Other general initialization
       calculateRemainingBudget();
-      // document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tabEl => {
-      //   tabEl.addEventListener('shown.bs.tab', function (event) {
-      //     const targetHref = event.target.getAttribute('href');
-      //     if (targetHref === '#currency') {
-      //       console.log('Currency tab activated, loading currencies...');
-      //       loadCurrencies();
-      //     }
-      //   });
-      // });
+      const toggleButton = document.getElementById('theme-toggle');
+      const lightIcon = document.querySelector('.light-icon');
+      const darkIcon = document.querySelector('.dark-icon');
+      
+      // Check for saved theme preference or use system preference
+      const savedTheme = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      
+      // Set initial theme
+      if (savedTheme) {
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        updateIcons(savedTheme);
+      } else if (prefersDark) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        updateIcons('dark');
+      } else {
+        document.documentElement.setAttribute('data-theme', 'light');
+        updateIcons('light');
+      }
+
+      // Toggle theme when button is clicked
+      toggleButton.addEventListener('click', function() {
+          const currentTheme = document.documentElement.getAttribute('data-theme');
+          const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+          
+          // Update theme attribute
+          document.documentElement.setAttribute('data-theme', newTheme);
+          
+          // Save preference to localStorage
+          localStorage.setItem('theme', newTheme);
+          
+          // Update icons
+          updateIcons(newTheme);
+      });
+
+      function updateIcons(theme) {
+        if (theme === 'dark') {
+          lightIcon.classList.add('d-none');
+          darkIcon.classList.remove('d-none');
+        } else {
+          lightIcon.classList.remove('d-none');
+          darkIcon.classList.add('d-none');
+        }
+      }
     });
   </script>
   
