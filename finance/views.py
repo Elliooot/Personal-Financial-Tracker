@@ -364,7 +364,6 @@ def get_statistics_data(request):
         month = request.GET.get('month')
         mode = request.GET.get('mode', 'year')
 
-        # initialize data structure
         monthly_data = {str(i): {'income': 0, 'expense': 0} for i in range(1, 13)}
         daily_data = {}
         expense_by_category = {}
@@ -379,14 +378,13 @@ def get_statistics_data(request):
         except Exception:
             base_query = transactions.none()
 
-        # handle monthly view
+        # get month view
         if mode == 'month' and month:
             year_int = int(year)
             month_int = int(month)
             days_in_month = calendar.monthrange(year_int, month_int)[1]
             daily_data = {str(i): {'income': 0, 'expense': 0} for i in range(1, days_in_month + 1)}
-            transactions = base_query.filter(date__month=month_int)
-            # handle budget data
+            transactions = base_query.filter(date__month=month_int)            
             budget_data = budgets.filter(
                 period__year=int(year),
                 period__month=int(month)
@@ -394,61 +392,88 @@ def get_statistics_data(request):
             total_budget = sum(float(b.budget_amount) for b in budget_data)
         else:
             transactions = base_query
-            # handle budget data
             budget_data = budgets.filter(period__year=int(year))
             total_budget = sum(float(b.budget_amount) for b in budget_data)
 
-        # handle transactions
+        # get transactions data, and deal with currency
         for transaction in transactions:
             try:
-                amount = abs(float(transaction.amount))
+                # get original amount and exchange rate
+                original_amount = float(transaction.amount)
+                exchange_rate = float(transaction.currency.exchange_rate)
+                
+                # convert to GBP
+                amount_in_gbp = original_amount / exchange_rate
+                
                 month_num = str(transaction.date.month)
                 day_num = str(transaction.date.day)
                 category = transaction.category.name if transaction.category else 'Uncategorized'
 
                 if transaction.transaction_type:  # Income
-                    monthly_data[month_num]['income'] += amount
-                    total_income += amount
-                    income_by_category[category] = income_by_category.get(category, 0) + amount
+                    monthly_data[month_num]['income'] += amount_in_gbp
+                    total_income += amount_in_gbp
+                    income_by_category[category] = income_by_category.get(category, 0) + amount_in_gbp
                     
                     if mode == 'month' and month and day_num in daily_data:
-                        daily_data[day_num]['income'] += amount
+                        daily_data[day_num]['income'] += amount_in_gbp
                 else:  # Expense
-                    monthly_data[month_num]['expense'] += amount
-                    total_expense += amount
-                    expense_by_category[category] = expense_by_category.get(category, 0) + amount
+                    monthly_data[month_num]['expense'] += amount_in_gbp
+                    total_expense += amount_in_gbp
+                    expense_by_category[category] = expense_by_category.get(category, 0) + amount_in_gbp
                     
-                    # handle daily expense data
                     if mode == 'month' and month and day_num in daily_data:
-                        daily_data[day_num]['expense'] += amount
-            except Exception:
+                        daily_data[day_num]['expense'] += amount_in_gbp
+            except Exception as e:
+                logger.error(f"Error processing transaction {transaction.id}: {str(e)}")
                 continue
 
-        # handle category budgets
+        # get budget data
         for budget in budget_data:
             category_name = budget.category.name
             category_budgets[category_name] = category_budgets.get(category_name, 0) + float(budget.budget_amount)
 
         response_data = {
-            'income': float(total_income),
-            'expense': float(total_expense),
-            'balance': float(total_income - total_expense),
-            'monthly_data': monthly_data,
-            'expense_by_category': expense_by_category,
-            'income_by_category': income_by_category,
+            'income': round(total_income, 2),
+            'expense': round(total_expense, 2),
+            'balance': round(total_income - total_expense, 2),
+            'monthly_data': {
+                month: {
+                    'income': round(data['income'], 2),
+                    'expense': round(data['expense'], 2)
+                }
+                for month, data in monthly_data.items()
+            },
+            'expense_by_category': {
+                category: round(amount, 2)
+                for category, amount in expense_by_category.items()
+            },
+            'income_by_category': {
+                category: round(amount, 2)
+                for category, amount in income_by_category.items()
+            },
             'budget_data': {
-                'total_budget': total_budget,
-                'used_budget': float(total_expense),
-                'category_budgets': category_budgets
+                'total_budget': round(total_budget, 2),
+                'used_budget': round(total_expense, 2),
+                'category_budgets': {
+                    category: round(amount, 2)
+                    for category, amount in category_budgets.items()
+                }
             }
         }
 
         if mode == 'month' and month:
-            response_data['daily_data'] = daily_data
+            response_data['daily_data'] = {
+                day: {
+                    'income': round(data['income'], 2),
+                    'expense': round(data['expense'], 2)
+                }
+                for day, data in daily_data.items()
+            }
 
         return JsonResponse(response_data)
 
     except Exception as e:
+        logger.error(f"Error in get_statistics_data: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)
 
 def management_view(request):
