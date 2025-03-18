@@ -1,4 +1,5 @@
 {% load static %}
+{% csrf_token %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -609,12 +610,55 @@
   {% block page_scripts %}{% endblock %}
 
   <script>
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
     let currentEditIndex = null;
     // Store current filter state
     let currentFilterState = {
       transactionType: 'all',
       category: 'all',
       description: ''
+    }
+
+    // Pagination variables
+    let currentPage = 1;
+    let pageSize = 10; // Default items per page
+    let totalPages = 1;
+
+    // Function to update pagination controls
+    function updatePaginationControls(totalItems) {
+      // Calculate total pages
+      totalPages = Math.ceil(totalItems / pageSize);
+      
+      // Update page info
+      document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages}`;
+      
+      // Update showing info
+      const start = (currentPage - 1) * pageSize + 1;
+      const end = Math.min(currentPage * pageSize, totalItems);
+      document.getElementById('currentShowing').textContent = totalItems > 0 ? `${start}-${end}` : '0';
+      document.getElementById('totalItems').textContent = totalItems;
+      
+      // Update buttons state
+      document.getElementById('prevPage').parentElement.classList.toggle('disabled', currentPage <= 1);
+      document.getElementById('nextPage').parentElement.classList.toggle('disabled', currentPage >= totalPages);
+    }
+
+    // Function to handle page navigation
+    function changePage(direction) {
+      if (direction === 'prev' && currentPage > 1) {
+        currentPage--;
+      } else if (direction === 'next' && currentPage < totalPages) {
+        currentPage++;
+      }
+      refreshTables();
+    }
+
+    // Function to handle page size change
+    function changePageSize(newSize) {
+      pageSize = parseInt(newSize);
+      currentPage = 1; // Reset to first page when changing page size
+      refreshTables();
     }
 
     // Sidebar collapse
@@ -724,6 +768,8 @@
         currentFilterState.description = value;
       };
 
+      currentPage = 1;
+
       const filteredData = getFilteredTransactions();
       refreshTables();
     }
@@ -778,10 +824,26 @@
         if (isSavedView) {
             displayData = data.filter(t => t.is_saved === true);
         }
+        
+        // For pagination: Only apply pagination to the transaction-table-month
+        // Other tables (category and saved) will show all items
+        let paginatedData = displayData;
+        if (tableId === "transaction-table-month" && !isSavedView) {
+            // Update pagination controls first
+            updatePaginationControls(displayData.length);
+            
+            // Then paginate the data
+            const startIndex = (currentPage - 1) * pageSize;
+            const endIndex = Math.min(startIndex + pageSize, displayData.length);
+            paginatedData = displayData.slice(startIndex, endIndex);
+        }
 
-        let tableContent = displayData.map((t, index) => {
+        let tableContent = paginatedData.map((t, index) => {
             const btnClass = t.is_saved ? "btn-secondary" : "btn-success";
             const btnText = t.is_saved ? "Unsave" : "Save";
+            
+            // For saved view, use the index, for paginated view, calculate the real index
+            const realIndex = isSavedView ? index : displayData.indexOf(t);
             
             return `<tr>
                 <td>${t.date}</td>
@@ -792,18 +854,22 @@
                 <td>${t.account_name}</td>
                 <td>${t.description}</td>
                 <td>
-                    <button class="btn ${btnClass} btn-sm" onclick="toggleSaveTransaction(${index}, ${isSavedView})">
+                    <button class="btn ${btnClass} btn-sm" onclick="toggleSaveTransaction(${realIndex}, ${isSavedView})">
                         ${btnText}
                     </button>
                 </td>
                 <td>
-                    <button class="btn btn-warning btn-sm" onclick="openEditModal(${index})">Edit</button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteTransaction(${index})">Delete</button>
+                    <button class="btn btn-warning btn-sm" onclick="openEditModal(${realIndex})">Edit</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteTransaction(${realIndex})">Delete</button>
                 </td>
             </tr>`;
         }).join('');
         
-        tableElement.innerHTML = tableContent || '<tr><td colspan="9" class="text-center">No data available</td></tr>';
+        if (paginatedData.length === 0) {
+            tableContent = '<tr><td colspan="9" class="text-center">No data available</td></tr>';
+        }
+        
+        tableElement.innerHTML = tableContent;
     }
 
     function findOriginalIndex(transactionId) {
@@ -1699,6 +1765,8 @@
 
     // Add Transaction Submit Handler
     document.getElementById('addTransaction').addEventListener('click', () => {
+      const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+      console.log("csrftoken: " + csrftoken);
       const newTransaction = {
         date: document.getElementById('addDate').value,
         category: document.getElementById('addCategory').value,
@@ -1725,6 +1793,7 @@
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRFToken': csrftoken
         },
         body: new URLSearchParams({
           'date': newTransaction.date,
@@ -1742,6 +1811,9 @@
           // Add new transaction to local array with returned ID
           newTransaction.id = data.transaction_id;
           newTransaction.is_saved = false; // Default to not saved
+          if (!Array.isArray(window.transactions)) {
+            window.transactions = []; // Initialize as empty array if it's not an array
+          }
           transactions.push(newTransaction);
           
           // Refresh tables and budgets
@@ -2224,6 +2296,7 @@
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRFToken': csrftoken
         },
         body: new URLSearchParams({
           'name': categoryName,
@@ -2898,7 +2971,6 @@
       if (accountTable) {
         console.log('Account table found, updating with current data');
         updateAccountTable();
-        console.log("HI")
       }
 
       const tabLinks = document.querySelectorAll('a[data-bs-toggle="tab"]');
@@ -2922,6 +2994,23 @@
           }
         });
       });
+
+      // Initialize pagination controls
+      const prevPageBtn = document.getElementById('prevPage');
+      const nextPageBtn = document.getElementById('nextPage');
+      const pageSizeSelector = document.getElementById('pageSizeSelector');
+      
+      if (prevPageBtn) {
+        prevPageBtn.addEventListener('click', () => changePage('prev'));
+      }
+      
+      if (nextPageBtn) {
+        nextPageBtn.addEventListener('click', () => changePage('next'));
+      }
+      
+      if (pageSizeSelector) {
+        pageSizeSelector.addEventListener('change', (e) => changePageSize(e.target.value));
+      }
 
       if(document.getElementById('detail-page')){
         refreshTables();
