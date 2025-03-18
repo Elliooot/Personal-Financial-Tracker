@@ -52,15 +52,39 @@ def create_default_categories(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=User)
 def create_default_currencies(sender, instance, created, **kwargs):
+    """
+    When a new user is created, ensure they have access to default currencies.
+    """
     if created:
         default_currencies = ['GBP', 'EUR', 'USD']
         for currency_code in default_currencies:
             try:
-                currency, created_currency = Currency.objects.get_or_create(
-                    user=None,
-                    currency_code=currency_code,
-                    defaults={'exchange_rate': 1.0}
-                )
-                logger.info(f"Ensured system default currency {currency_code} exists.")
+                system_currency = Currency.objects.filter(
+                    currency_code=currency_code
+                ).first()
+                
+                if system_currency:
+                    logger.info(f"System currency {currency_code} already exists.")
+                else:
+                    try:
+                        exchange_rate = get_exchange_rate_with_gbp_base(currency_code)
+                        logger.info(f"Got exchange rate for {currency_code}: {exchange_rate}")
+                    except Exception as e:
+                        logger.warning(f"Failed to get exchange rate for {currency_code}: {str(e)}")
+                        if currency_code == 'GBP':
+                            exchange_rate = 1.0
+                        elif currency_code == 'EUR':
+                            exchange_rate = 1.19
+                        elif currency_code == 'USD':
+                            exchange_rate = 1.28
+                        else:
+                            exchange_rate = 1.0
+                    
+                    Currency.objects.create(
+                        user=None,
+                        currency_code=currency_code,
+                        exchange_rate=exchange_rate
+                    )
+                    logger.info(f"Created system default currency {currency_code}.")
             except Exception as e:
-                logger.error(f"Error ensuring default currency {currency_code}: {str(e)}")
+                logger.error(f"Error processing default currency {currency_code}: {str(e)}")
