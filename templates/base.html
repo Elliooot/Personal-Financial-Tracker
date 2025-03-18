@@ -284,9 +284,7 @@
             <div class="mb-3">
               <label for="addCurrency" class="form-label">Currency</label>
               <select class="form-select" id="addCurrency">
-                <option value="GBP">GBP</option>
-                <option value="EUR">EUR</option>
-                <option value="USD">USD</option>
+                <option value="">-- Select Currency --</option>
               </select>
             </div>
             <div class="mb-3">
@@ -749,6 +747,7 @@
       updateCategoryDropdown();
       updateAccountDropdown();
       updateTransactionCurrencyDropdown('addCurrency');
+      // populateCurrencyDropdown();
       
       // Show modal
       const addModal = new bootstrap.Modal(document.getElementById('addModal'));
