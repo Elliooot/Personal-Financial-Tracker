@@ -156,6 +156,9 @@
     .sortable-table tr {
       transition: all 0.2s ease;
     }
+    .tab-pane {
+      background: white !important; 
+    }
     /* Theme toggle button styles */
     .theme-toggle-btn {
       background: none;
@@ -300,7 +303,7 @@
         </a>
         <a href="{% url 'user_instruction' %}" id="user-instruction-link" class="{% block active_user_instruction %}{% endblock %}">
           <img src="{% static 'img/instruction.png' %}" alt="User Instruction Logo" class="sidebar-logo">
-          <span class="sidebar-text">User Instruction</span>
+          <span class="sidebar-text">User Guide</span>
         </a>
         <a href="{% url 'contact' %}" id="contact-link" class="{% block active_contact %}{% endblock %}">
           <img src="{% static 'img/contact.png' %}" alt="Contact Logo" class="sidebar-logo">
@@ -613,7 +616,8 @@
     // Store current filter state
     let currentFilterState = {
       transactionType: 'all',
-      category: 'all'
+      category: 'all',
+      description: ''
     }
 
     // Pagination variables
@@ -711,8 +715,11 @@
     });
 
     // Filter transactions
-    function getFilteredTransactions(){
-      if(!window.transactions || !Array.isArray(window.transactions)) return [];
+    function getFilteredTransactions() {
+      if(!window.transactions || !Array.isArray(window.transactions)) {
+        console.log('No transactions available');
+        return [];
+      }
 
       let filtered = [...window.transactions];
       
@@ -724,6 +731,15 @@
 
       if (currentFilterState.category !== 'all') {
         filtered = filtered.filter(t => t.category === currentFilterState.category);
+      }
+
+      if (currentFilterState.description && currentFilterState.description.trim() !== '') {
+        const searchTerm = currentFilterState.description.toLowerCase();
+        filtered = filtered.filter(t => 
+          t.description && 
+          t.description.toLowerCase().includes(searchTerm)
+        );
+        console.log('After description filter:', filtered.length, 'Search term:', searchTerm);
       }
 
       return filtered;
@@ -748,7 +764,9 @@
         }
       } else if (filterType === 'category') {
         currentFilterState.category = value;
-      }
+      } else if (filterType === 'description') {
+        currentFilterState.description = value;
+      };
 
       currentPage = 1;
 
@@ -768,6 +786,18 @@
       updateFilterState('category', selectedCategory);
     }
 
+    function filterDescription() {
+      const filterEl = document.getElementById('description-filter');
+      if (!filterEl) {
+        console.error('Description filter element not found');
+        return;
+      }
+
+      const searchTerm = filterEl.value.trim();
+      console.log('Searching for:', searchTerm);
+      updateFilterState('description', searchTerm);
+    }
+
     function refreshTables() {
       if (!document.getElementById('detail-page')) {
           console.log('Not on detail page, skipping table refresh.');
@@ -778,6 +808,7 @@
       updateTable(filteredData, "transaction-table-month");
       updateTable(filteredData, "transaction-table-category");
       updateTable(filteredData, "transaction-table-saved");
+      updateTable(filteredData, "transaction-table-search");
     }
 
     function updateTable(data, tableId) {
@@ -2858,6 +2889,12 @@
 
     // Initialize data
     function initializeData() {
+      // 只在特定頁面才初始化數據
+      if (!document.getElementById('detail-page') && 
+      !document.getElementById('management-page')) {
+        return; // 如果不是這些頁面，直接返回
+      }
+      
       // 初始化交易數據
       const transactionsDataElement = document.getElementById('transactions_data');
       if (transactionsDataElement) {
@@ -2978,6 +3015,7 @@
       if(document.getElementById('detail-page')){
         refreshTables();
         filterCategory();
+        filterDescription();
         updateCategoryDropdown(); // Refresh drop-down box
         updateAccountDropdown();
         populateTransactionCurrencyDropdowns();
