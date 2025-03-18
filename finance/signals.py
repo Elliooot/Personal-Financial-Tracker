@@ -36,7 +36,7 @@ def create_default_categories(sender, instance, created, **kwargs):
         
         # create income categories
         for category_name in default_income_categories:
-            Category.objects.create(
+            Category.objects.get_or_create(
                 user=instance,
                 name=category_name,
                 is_income=True
@@ -44,7 +44,7 @@ def create_default_categories(sender, instance, created, **kwargs):
         
         # create expense categories
         for category_name in default_expense_categories:
-            Category.objects.create(
+            Category.objects.get_or_create(
                 user=instance,
                 name=category_name,
                 is_income=False
