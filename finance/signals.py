@@ -1,9 +1,12 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.contrib.auth import get_user_model
-from finance.models import Category
+from finance.models import Category, Currency
+import logging
+from finance.currency_utils import get_exchange_rate_with_gbp_base
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 @receiver(post_save, sender=User)
 def create_default_categories(sender, instance, created, **kwargs):
@@ -33,7 +36,7 @@ def create_default_categories(sender, instance, created, **kwargs):
         
         # create income categories
         for category_name in default_income_categories:
-            Category.objects.create(
+            Category.objects.get_or_create(
                 user=instance,
                 name=category_name,
                 is_income=True
@@ -41,8 +44,32 @@ def create_default_categories(sender, instance, created, **kwargs):
         
         # create expense categories
         for category_name in default_expense_categories:
-            Category.objects.create(
+            Category.objects.get_or_create(
                 user=instance,
                 name=category_name,
                 is_income=False
             )
+
+@receiver(post_save, sender=User)
+def create_default_currencies(sender, instance, created, **kwargs):
+    if created:
+        default_currencies = ['GBP', 'EUR', 'USD']
+        for currency_code in default_currencies:
+            try:
+                currency, created_currency = Currency.objects.get_or_create(
+                    user=None,
+                    currency_code=currency_code,
+                    defaults={'exchange_rate': 1.0}
+                )
+                
+                if created_currency:
+                    try:
+                        exchange_rate = get_exchange_rate_with_gbp_base(currency_code)
+                        currency.exchange_rate = exchange_rate
+                        currency.save()
+                    except Exception as e:
+                        logger.warning(f"Failed to get exchange rate for {currency_code}: {str(e)}")
+                
+                logger.info(f"Ensured system default currency {currency_code} exists.")
+            except Exception as e:
+                logger.error(f"Error ensuring default currency {currency_code}: {str(e)}")

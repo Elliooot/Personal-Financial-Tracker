@@ -1,9 +1,19 @@
+import requests
+from decimal import Decimal
+from django.conf import settings
+import logging
 import json
+from datetime import datetime
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.contrib.auth.models import User
+from django.core.management.base import BaseCommand
+from finance.currency_utils import get_exchange_rate_with_gbp_base
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
-from django.db.models import Count, Sum
+from django.db.models import Q, Count, Sum
 from finance.forms import CategoryForm, TransactionForm
 from finance.models import User, Account, Category, Transaction, Currency, Budget
 from django.contrib import messages
@@ -12,6 +22,8 @@ from django.contrib.auth.hashers import make_password
 from django.contrib.auth.decorators import login_required
 import traceback
 import calendar
+
+logger = logging.getLogger(__name__)
 
 def register(request):
     if request.method == 'POST':
@@ -157,7 +169,7 @@ def add_transaction_view(request):
         if not date or not category_name or not amount or not account_name:
             return JsonResponse({'status': 'error', 'message': 'Date, category, amount and account are required'}, status=400)
 
-        category, _ = Category.objects.get_or_create(name=category_name)
+        category, _ = Category.objects.get_or_create(name=category_name, user=request.user)
 
         account_obj, _ = Account.objects.get_or_create(
             user=request.user,
@@ -199,8 +211,6 @@ def delete_transaction_view(request):
 
         Transaction.objects.get(id=transaction_id).delete()
 
-        import logging
-        logger = logging.getLogger(__name__)
         logger.info('Transaction deleted')
 
         return JsonResponse({'status': 'success'})
@@ -456,6 +466,17 @@ def management_view(request):
         'false': expense_categories_list
     }
 
+    currencies = Currency.objects.filter(Q(user=None) | Q(user=request.user))
+    
+    currencies_data = [
+        {
+            'id': c.id,
+            'currency_code': c.currency_code,
+            'exchange_rate': str(c.exchange_rate),
+            'is_system': c.user is None
+        } for c in currencies
+    ]
+
     accounts = Account.objects.filter(user=request.user)
 
     accounts_data = [
@@ -473,6 +494,7 @@ def management_view(request):
         'categories_json': json.dumps(categories_data),
         # 'income_categories_list': json.dumps(income_categories_list),
         # 'expense_categories_list': json.dumps(expense_categories_list)
+        'currencies_json': currencies_data,
         'accounts_json': accounts_data,
     })
 
@@ -737,56 +759,346 @@ def get_available_currencies_view(request):
             'status': 'error',
             'message': str(e)
         }, status=500)
-
+    
 @csrf_exempt
 @login_required
 def add_currency_view(request):
+    from finance.currency_utils import get_exchange_rate_with_gbp_base
     if request.method == 'POST':
-        currency_id = request.POST.get('currency_id')
         currency_code = request.POST.get('currency_code')
-        exchange_rate = request.POST.get('exchange_rate')
         
-        if not exchange_rate:
-            return JsonResponse({'status': 'error', 'message': 'Exchange rate is required'}, status=400)
+        if not currency_code:
+            return JsonResponse({'status': 'error', 'message': 'Currency code is required'}, status=400)
         
         try:
-            if currency_id:
-                system_currency = Currency.objects.get(id=currency_id)
-                
-                user_currency, created = Currency.objects.get_or_create(
-                    user=request.user,
-                    currency_code=system_currency.currency_code,
-                    defaults={'exchange_rate': exchange_rate}
-                )
-                
-                if not created:
-                    user_currency.exchange_rate = exchange_rate
-                    user_currency.save()
-                
-                return JsonResponse({'status': 'success', 'message': 'Currency rate updated successfully'})
+            # Check if currency already exists
+            if Currency.objects.filter(currency_code=currency_code).exists():
+                return JsonResponse({'status': 'exists', 'message': 'Currency already exists'})
             
-            elif currency_code:
-                user_currency, created = Currency.objects.get_or_create(
-                    user=request.user,
-                    currency_code=currency_code,
-                    defaults={'exchange_rate': exchange_rate}
-                )
-                
-                if not created:
-                    user_currency.exchange_rate = exchange_rate
-                    user_currency.save()
-                    return JsonResponse({'status': 'success', 'message': 'Currency rate updated successfully'})
-                
-                return JsonResponse({'status': 'success', 'message': 'Currency added successfully'})
+            # Get exchange rate using GBP as base currency
+            try:
+                exchange_rate = get_exchange_rate_with_gbp_base(currency_code)
+            except Exception as e:
+                return JsonResponse({
+                    'status': 'error', 
+                    'message': f'Failed to fetch exchange rate: {str(e)}'
+                }, status=500)
             
-            else:
-                return JsonResponse({'status': 'error', 'message': 'Currency selection or code is required'}, status=400)
-                
+            # Create new currency
+            currency = Currency.objects.create(
+                user=request.user,  # Associate with current user
+                currency_code=currency_code,
+                exchange_rate=exchange_rate
+            )
+            
+            return JsonResponse({
+                'status': 'success', 
+                'message': 'Currency added successfully',
+                'currency': {
+                    'id': currency.id,
+                    'currency_code': currency.currency_code,
+                    'exchange_rate': float(currency.exchange_rate),
+                    'last_updated': currency.last_updated.isoformat()
+                }
+            })
+        
         except Exception as e:
+            logger.error(f"Error adding currency: {str(e)}")
             return JsonResponse({'status': 'error', 'message': f'Add currency failed: {str(e)}'}, status=500)
     
     return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
 
+@login_required
+def refresh_exchange_rates_view(request):
+    """
+    View to refresh exchange rates for the current user's currencies.
+    """
+    from finance.currency_utils import get_multiple_rates_with_gbp_base
+    try:
+        # Get all currencies for this user
+        currencies = Currency.objects.filter(user=request.user)
+        currency_codes = [c.currency_code for c in currencies]
+        
+        if not currency_codes:
+            return JsonResponse({
+                'status': 'info',
+                'message': 'No currencies to update'
+            })
+        
+        # Get all exchange rates at once to minimize API calls
+        try:
+            rates = get_multiple_rates_with_gbp_base(currency_codes)
+        except Exception as e:
+            logger.error(f"Failed to get exchange rates: {str(e)}")
+            return JsonResponse({
+                'status': 'error',
+                'message': f'Failed to get exchange rates: {str(e)}'
+            }, status=500)
+        
+        # Update each currency with new rates
+        updated_count = 0
+        updated_currencies = {}
+        
+        for currency in currencies:
+            code = currency.currency_code
+            if code in rates:
+                old_rate = currency.exchange_rate
+                currency.exchange_rate = rates[code]
+                currency.save()
+                updated_count += 1
+                updated_currencies[code] = {
+                    'old_rate': float(old_rate),
+                    'new_rate': float(rates[code])
+                }
+                
+        return JsonResponse({
+            'status': 'success',
+            'message': f'Updated {updated_count} currencies',
+            'updated_count': updated_count,
+            'updated_currencies': updated_currencies
+        })
+            
+    except Exception as e:
+        logger.error(f"Error refreshing exchange rates: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Failed to update exchange rates: {str(e)}'
+        }, status=500)
+
+def get_exchange_rate_with_gbp_base(currency_code):
+    """
+    Calculate exchange rate with GBP as base currency using Open Exchange Rates API.
+    
+    This function works with the free tier of Open Exchange Rates by:
+    1. Getting USD rates for both GBP and the target currency
+    2. Calculating the cross rate between them
+    
+    Args:
+        currency_code (str): Target currency code (e.g., 'EUR', 'JPY')
+        
+    Returns:
+        Decimal: Exchange rate as GBP to target currency
+    """
+    API_KEY = settings.OPENEXCHANGERATES_API_KEY
+    
+    # If the target is GBP, return 1.0
+    if currency_code == 'GBP':
+        return Decimal('1.0')
+    
+    try:
+        # We need both GBP and the target currency rates against USD
+        url = "https://openexchangerates.org/api/latest.json"
+        params = {
+            'app_id': API_KEY,
+            'base': 'USD',  # Free tier only supports USD as base
+            'symbols': f"GBP,{currency_code}"  # Get both GBP and target rates
+        }
+        
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
+        
+        data = response.json()
+        
+        if 'rates' not in data:
+            logger.error(f"Invalid API response: {data}")
+            raise Exception("Invalid API response: 'rates' field missing")
+        
+        # Extract rates
+        if 'GBP' not in data['rates'] or currency_code not in data['rates']:
+            missing = []
+            if 'GBP' not in data['rates']:
+                missing.append('GBP')
+            if currency_code not in data['rates']:
+                missing.append(currency_code)
+            raise Exception(f"Currency rates not found in response: {', '.join(missing)}")
+        
+        # Get USD to GBP and USD to target rates
+        usd_to_gbp = Decimal(str(data['rates']['GBP']))
+        usd_to_target = Decimal(str(data['rates'][currency_code]))
+        
+        # Calculate GBP to target rate:
+        # GBP to target = (USD to target) / (USD to GBP)
+        gbp_to_target = usd_to_target / usd_to_gbp
+        
+        logger.info(f"Calculated GBP to {currency_code} rate: {gbp_to_target}")
+        return gbp_to_target
+        
+    except requests.RequestException as e:
+        logger.error(f"API request failed: {str(e)}")
+        raise Exception(f"Failed to fetch exchange rate: {str(e)}")
+    except (ValueError, KeyError) as e:
+        logger.error(f"Error parsing API response: {str(e)}")
+        raise Exception(f"Failed to parse exchange rate data: {str(e)}")
+    except Exception as e:
+        logger.error(f"Unexpected error: {str(e)}")
+        raise Exception(f"Failed to get exchange rate: {str(e)}")
+
+
+def get_multiple_rates_with_gbp_base(currency_codes):
+    """
+    Get multiple exchange rates with GBP as base currency in a single API call.
+    
+    Args:
+        currency_codes (list): List of currency codes to get rates for
+        
+    Returns:
+        dict: Dictionary of currency codes to exchange rates (GBP as base)
+    """
+    API_KEY = settings.OPENEXCHANGERATES_API_KEY
+    
+    # Filter out GBP if it's in the list (it would always be 1.0)
+    codes_to_fetch = [code for code in currency_codes if code != 'GBP']
+    
+    # If only GBP was requested, return immediately
+    if not codes_to_fetch:
+        return {'GBP': Decimal('1.0')}
+    
+    # Add GBP to the list of currencies to fetch
+    if 'GBP' not in codes_to_fetch:
+        codes_to_fetch.append('GBP')
+    
+    try:
+        # Prepare API call
+        url = "https://openexchangerates.org/api/latest.json"
+        params = {
+            'app_id': API_KEY,
+            'base': 'USD',
+            'symbols': ','.join(codes_to_fetch)
+        }
+        
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
+        
+        data = response.json()
+        
+        if 'rates' not in data or 'GBP' not in data['rates']:
+            logger.error(f"Invalid API response or GBP rate missing: {data}")
+            raise Exception("Invalid API response: required rates missing")
+        
+        # Get the USD to GBP rate
+        usd_to_gbp = Decimal(str(data['rates']['GBP']))
+        
+        # Calculate all rates with GBP as base
+        result = {'GBP': Decimal('1.0')}  # GBP to GBP is always 1.0
+        
+        for code in currency_codes:
+            if code == 'GBP':
+                continue  # Already added
+                
+            if code in data['rates']:
+                # Convert: GBP to target = (USD to target) / (USD to GBP)
+                usd_to_target = Decimal(str(data['rates'][code]))
+                gbp_to_target = usd_to_target / usd_to_gbp
+                result[code] = gbp_to_target
+            else:
+                logger.warning(f"Currency {code} not found in API response")
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error fetching multiple exchange rates: {str(e)}")
+        raise Exception(f"Failed to fetch exchange rates: {str(e)}")
+
+
+def update_all_currency_rates_gbp_base():
+    """
+    Update all currency exchange rates in the database using GBP as base currency.
+    """
+    from finance.models import Currency  # Import here to avoid circular imports
+    
+    try:
+        # Get all currencies from database
+        currencies = Currency.objects.all()
+        currency_codes = [c.currency_code for c in currencies]
+        
+        if not currency_codes:
+            logger.info("No currencies to update")
+            return {"status": "success", "message": "No currencies to update"}
+        
+        # Fetch all rates at once with GBP as base
+        rates = get_multiple_rates_with_gbp_base(currency_codes)
+        
+        # Update each currency
+        updated = 0
+        for currency in currencies:
+            code = currency.currency_code
+            
+            if code in rates:
+                currency.exchange_rate = rates[code]
+                currency.save()
+                updated += 1
+                logger.debug(f"Updated {code} rate to {rates[code]}")
+            else:
+                logger.warning(f"Could not update rate for {code}")
+        
+        logger.info(f"Updated {updated} of {len(currencies)} currencies with GBP as base")
+        
+        return {
+            "status": "success", 
+            "message": f"Updated {updated} currencies with GBP as base",
+            "updated_count": updated,
+            "total_count": len(currencies)
+        }
+        
+    except Exception as e:
+        error_msg = f"Failed to update currency rates: {str(e)}"
+        logger.error(error_msg)
+        return {"status": "error", "message": error_msg}
+
+class Command(BaseCommand):
+    help = 'Add default currencies for existing users'
+
+    def handle(self, *args, **options):
+        users = User.objects.all()
+        self.stdout.write(f"Found {users.count()} users")
+        
+        default_currencies = ['GBP', 'EUR', 'USD']
+        
+        for user in users:
+            self.stdout.write(f"Processing user: {user.username}")
+            added_count = 0
+            
+            for currency_code in default_currencies:
+                # Skip if user already has this currency
+                if Currency.objects.filter(user=user, currency_code=currency_code).exists():
+                    self.stdout.write(f"  {currency_code} already exists for {user.username}")
+                    continue
+                
+                try:
+                    # Try to get exchange rate from API
+                    try:
+                        exchange_rate = get_exchange_rate_with_gbp_base(currency_code)
+                    except Exception as e:
+                        self.stdout.write(self.style.WARNING(
+                            f"  Failed to get exchange rate for {currency_code}: {str(e)}"
+                        ))
+                        # Fallback values
+                        if currency_code == 'GBP':
+                            exchange_rate = 1.0
+                        elif currency_code == 'EUR':
+                            exchange_rate = 1.19
+                        elif currency_code == 'USD':
+                            exchange_rate = 1.28
+                        else:
+                            exchange_rate = 1.0
+                    
+                    # Create the currency
+                    Currency.objects.create(
+                        user=user,
+                        currency_code=currency_code,
+                        exchange_rate=exchange_rate
+                    )
+                    added_count += 1
+                    self.stdout.write(f"  Added {currency_code} for {user.username}")
+                    
+                except Exception as e:
+                    self.stdout.write(self.style.ERROR(
+                        f"  Error adding {currency_code} for {user.username}: {str(e)}"
+                    ))
+            
+            self.stdout.write(f"Added {added_count} currencies for {user.username}")
+            
+        self.stdout.write(self.style.SUCCESS("Default currencies have been added to existing users"))
 
 @csrf_exempt
 def delete_currency_view(request):
