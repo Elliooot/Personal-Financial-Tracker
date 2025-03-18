@@ -422,7 +422,7 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-primary" id="addTransaction">Add</button>
+          <button type="submit" class="btn btn-primary" id="addTransaction">Add</button>
         </div>
       </div>
     </div>
@@ -2840,11 +2840,11 @@
     }
 
     function exportToCSV() {
-      const headers = ["Date", "Categories", "Pending", "Description"];
+      const headers = ["Date", "Category", "Type", "Currency", "Amount", "Account", "Description"];
       const csvContent = "data:text/csv;charset=utf-8," 
           + headers.join(",") + "\n" 
           + transactions.map(t => 
-              `${t.date},${t.category},${t.amount},${t.description}`
+              `${t.date},${t.category},${t.transaction_type ? "Income" : "Expense"},${t.currency},${t.amount},${t.account_name},${t.description}`
           ).join("\n");
 
       const encodedUri = encodeURI(csvContent);

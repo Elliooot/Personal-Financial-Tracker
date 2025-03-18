@@ -27,7 +27,20 @@ class Currency(models.Model):
     last_updated = models.DateTimeField(auto_now=True)
     
     class Meta:
-        unique_together = ['user', 'currency_code']
+        constraints = [
+            # 確保系統貨幣唯一（user=None 的情況）
+            models.UniqueConstraint(
+                fields=['currency_code'],
+                condition=models.Q(user=None),
+                name='unique_system_currency'
+            ),
+            # 確保每個用戶的貨幣唯一
+            models.UniqueConstraint(
+                fields=['user', 'currency_code'],
+                condition=~models.Q(user=None),
+                name='unique_user_currency'
+            )
+        ]
     
     def __str__(self) -> str:
         if self.user:
@@ -58,6 +71,9 @@ class Category(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
     is_income = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ['user', 'name', 'is_income']
 
     def __str__(self) -> str:
         return self.name
