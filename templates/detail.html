@@ -27,44 +27,79 @@
   
   <div class="tab-content mt-3">
     <div class="tab-pane fade show active" id="by-month">
-      <table class="table table-bordered">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Category</th>
-            <th>Type</th>
-            <th>Currency</th>
-            <th>Amount</th>
-            <th>Account</th>
-            <th>Description</th>
-            <th>Save</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody id="transaction-table-month">
-          {% for t in transactions %}
-          <tr>
-            <td>{{ t.date }}</td>
-            <td>{{ t.category }}</td>
-            <td>{{ t.transaction_type }}</td>
-            <td>{{ t.currency }}</td>
-            <td>{{ t.account_name }}</td>
-            <td>{{ t.amount }}</td>
-            <td>{{ t.description }}</td>
-            <td>
-              <button class='btn ${t.is_saved ? "btn-secondary" : "btn-success"} btn-sm' onclick="toggleSaveTransaction(${index}, ${isSavedView ? 'true' : 'false'})">
-                  ${t.is_saved ? "Unsave" : "Save"}
-              </button>
-            <td>
-              <button class='btn btn-warning btn-sm' onclick="openEditModal({{ forloop.counter0 }})">Edit</button>
-              <button class="btn btn-danger btn-sm" onclick="deleteTransaction({{ forloop.counter0 }})">Delete</button>
-            </td>
-          </tr>
-          {% empty %}
-          <tr><td colspan="9" class="text-center">No transactions available</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
+      <div class="card">
+        <div class="card-body">
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Category</th>
+                <th>Type</th>
+                <th>Currency</th>
+                <th>Amount</th>
+                <th>Account</th>
+                <th>Description</th>
+                <th>Save</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="transaction-table-month">
+              {% for t in transactions %}
+              <tr>
+                <td>{{ t.date }}</td>
+                <td>{{ t.category }}</td>
+                <td>{{ t.transaction_type }}</td>
+                <td>{{ t.currency }}</td>
+                <td>{{ t.account_name }}</td>
+                <td>{{ t.amount }}</td>
+                <td>{{ t.description }}</td>
+                <td>
+                  <button class='btn ${t.is_saved ? "btn-secondary" : "btn-success"} btn-sm' onclick="toggleSaveTransaction(${index}, ${isSavedView ? 'true' : 'false'})">
+                      ${t.is_saved ? "Unsave" : "Save"}
+                  </button>
+                <td>
+                  <button class='btn btn-warning btn-sm' onclick="openEditModal({{ forloop.counter0 }})">Edit</button>
+                  <button class="btn btn-danger btn-sm" onclick="deleteTransaction({{ forloop.counter0 }})">Delete</button>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="9" class="text-center">No transactions available</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+      
+          <div class="pagination-controls d-flex justify-content-between align-items-center mt-3">
+            <div>
+              <span>Showing <span id="currentShowing">1-10</span> of <span id="totalItems">0</span> transactions</span>
+            </div>
+            <div>
+              <select id="pageSizeSelector" class="form-select form-select-sm" style="width: auto; display: inline-block;">
+                <option value="10">10 per page</option>
+                <option value="25">25 per page</option>
+                <option value="50">50 per page</option>
+                <option value="100">100 per page</option>
+              </select>
+            </div>
+            <nav aria-label="Transaction navigation">
+              <ul class="pagination pagination-sm mb-0">
+                <li class="page-item disabled">
+                  <button class="page-link" id="prevPage" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                  </button>
+                </li>
+                <li class="page-item">
+                  <span class="page-link" id="pageInfo">Page 1 of 1</span>
+                </li>
+                <li class="page-item disabled">
+                  <button class="page-link" id="nextPage" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                  </button>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        </div>
+      </div>
     </div>
     
     <div class="tab-pane fade" id="by-category">
