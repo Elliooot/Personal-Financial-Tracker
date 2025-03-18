@@ -23,6 +23,8 @@ from django.contrib.auth.decorators import login_required
 import traceback
 import calendar
 
+logger = logging.getLogger(__name__)
+
 def register(request):
     if request.method == 'POST':
         email = request.POST.get('email')
@@ -209,8 +211,6 @@ def delete_transaction_view(request):
 
         Transaction.objects.get(id=transaction_id).delete()
 
-        import logging
-        logger = logging.getLogger(__name__)
         logger.info('Transaction deleted')
 
         return JsonResponse({'status': 'success'})
@@ -758,7 +758,7 @@ def get_available_currencies_view(request):
             'status': 'error',
             'message': str(e)
         }, status=500)
-
+    
 @csrf_exempt
 @login_required
 def add_currency_view(request):
@@ -863,9 +863,6 @@ def refresh_exchange_rates_view(request):
             'status': 'error',
             'message': f'Failed to update exchange rates: {str(e)}'
         }, status=500)
-
-# Set up logger for this module
-logger = logging.getLogger(__name__)
 
 def get_exchange_rate_with_gbp_base(currency_code):
     """
@@ -1046,8 +1043,6 @@ def update_all_currency_rates_gbp_base():
         error_msg = f"Failed to update currency rates: {str(e)}"
         logger.error(error_msg)
         return {"status": "error", "message": error_msg}
-    
-logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
     help = 'Add default currencies for existing users'

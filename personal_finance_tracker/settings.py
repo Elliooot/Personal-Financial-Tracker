@@ -12,6 +12,11 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -137,7 +142,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'finance.User'
 
 # Open Exchange Rates API key
-OPENEXCHANGERATES_API_KEY = os.environ.get('API_KEY')  # Replace with your actual API key
+OPENEXCHANGERATES_API_KEY = os.environ.get('API_KEY')
 
 # Set GBP as the default/base currency
 DEFAULT_CURRENCY = 'GBP'
