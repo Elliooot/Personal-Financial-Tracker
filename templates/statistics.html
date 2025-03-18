@@ -7,31 +7,30 @@
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
 
 <style>
-
   .container {
     margin-bottom: 10px;
     margin-left: 0;
     padding-left: 10;
     max-width: 100%;
   }
-  
+
   .btn {
-    font-size: 14px; 
+    font-size: 14px;
   }
 
   .col-auto {
     padding-left: 0px;
   }
-  
+
   .filter-btn {
-    background-color: #a5a5a5;  
-    color: white; 
-    border-radius: 5px; 
+    background-color: #a5a5a5;
+    color: white;
+    border-radius: 5px;
   }
-  
-  .filter-btn:hover { 
-    background-color: #454545;  
-    color: white;  
+
+  .filter-btn:hover {
+    background-color: #454545;
+    color: white;
   }
 
   .filter-btn.active {
@@ -39,23 +38,27 @@
     border-color: #00bcd4 !important;
     color: white !important;
   }
-  
+
   .row {
     display: flex;
-    flex-wrap: nowrap;  /* prevent line break */
-    overflow-x: auto;   /* allow horizontal scroll */
+    flex-wrap: nowrap;
+    /* prevent line break */
+    overflow-x: auto;
+    /* allow horizontal scroll */
   }
-  
+
   .card-header {
-      padding: 0.3rem 1rem;   /* top and bottom margin; left and right margin (default is 1rem 1rem)*/
-      font-size: 1rem;
+    padding: 0.3rem 1rem;
+    /* top and bottom margin; left and right margin (default is 1rem 1rem)*/
+    font-size: 1rem;
   }
-  
+
   .card {
     /* margin-bottom: 10px; card bottom margin */
-    height: auto;  /* auto adjust card height based on content */
+    height: auto;
+    /* auto adjust card height based on content */
   }
-  
+
   .stat-item {
     padding: 10px;
     margin-bottom: 10px;
@@ -63,26 +66,26 @@
     background-color: #00bcd4;
     color: white;
   }
-  
+
   .stat-item span {
     font-size: 14px;
   }
-  
+
   .stat-item h3 {
     margin: 0;
     font-size: 24px;
   }
-  
+
   canvas {
-    width: 100%;     
-    height: 100%;   
+    width: 100%;
+    height: 100%;
   }
-  
+
   .piechartcard-body {
     display: flex;
-    flex-direction: column;  
-    justify-content: left; 
-    align-items: center;   
+    flex-direction: column;
+    justify-content: left;
+    align-items: center;
     padding: 10px;
   }
 
@@ -90,8 +93,7 @@
     height: 25px;
     font-size: 10px;
   }
-    
-</style>  
+</style>
 
 <div id="statistics-page">
   <div class="container">
@@ -116,10 +118,10 @@
       <div class="col-auto">
         <select id="monthSelect" class="form-select form-select-sm w-auto d-inline-block">
         </select>
-        </div>
       </div>
     </div>
   </div>
+
 
   <!-- First Row -->
   <div class="row mb-2 g-2">
@@ -169,9 +171,9 @@
               plugins: [ChartDataLabels],  // enable ChartDataLabels plugin
 
               data: { // Budget pie chart info
-                labels: ['No Budget Data'],  
+                labels: ['No Budget Data'],
                 datasets: [{
-                  data: [1],  
+                  data: [1],
                   backgroundColor: ['#E0E0E0'],
                   datalabels: {
                     color: '#FFCE56'
@@ -222,24 +224,24 @@
         <div class="card-body">
           <canvas id="incomeExpenseChart"></canvas>
 
-          <script>            
+          <script>
             const incomeExpenseChart = new Chart("incomeExpenseChart", {
               type: "line",
               data: {
                 labels: [],
-                datasets: [{ 
+                datasets: [{
                   label: 'Expense',
                   data: [],
                   borderColor: "#A8DFF1",
                   pointBackgroundColor: "#A8DFF1",
                   fill: false
-                }, { 
+                }, {
                   label: 'Income',
                   data: [],
                   borderColor: "#ECBA73",
                   pointBackgroundColor: "#ECBA73",
                   fill: false
-                }, { 
+                }, {
                   label: 'Balance',
                   data: [],
                   borderColor: "#F5E2D4",
@@ -260,26 +262,26 @@
                     }
                   },
                   datalabels: {
-                    display: false 
+                    display: false
                   }
                 },
                 scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: {
-                            color: '#f0f0f0'
-                        },
-                        ticks: {
-                            callback: function(value) {
-                                return value + ' £';
-                            }
-                        }
+                  y: {
+                    beginAtZero: true,
+                    grid: {
+                      color: '#f0f0f0'
                     },
-                    x: {
-                        grid: {
-                            display: false
-                        }
+                    ticks: {
+                      callback: function (value) {
+                        return value + ' £';
+                      }
                     }
+                  },
+                  x: {
+                    grid: {
+                      display: false
+                    }
+                  }
                 },
                 elements: {
                   point: {
@@ -293,7 +295,7 @@
               }
             });
           </script>
-            
+
         </div>
       </div>
     </div>
@@ -312,15 +314,15 @@
           <script>
             const expenseCtx = document.getElementById('expensePieChart');
             Chart.register(ChartDataLabels);
-  
+
             const expenseChart = new Chart(expenseCtx, {
               type: 'doughnut',
               plugins: [ChartDataLabels],
 
               data: {
-                labels: ['No Expense Data'],  
+                labels: ['No Expense Data'],
                 datasets: [{
-                  data: [1],  
+                  data: [1],
                   backgroundColor: ['#E0E0E0'],
                   datalabels: {
                     color: '#FFCE56'
@@ -373,15 +375,15 @@
           <script>
             const incomeCtx = document.getElementById('incomePieChart');
             Chart.register(ChartDataLabels);
-  
+
             const incomeChart = new Chart(incomeCtx, {
               type: 'doughnut',
               plugins: [ChartDataLabels],
 
               data: {
-                labels: ['No Income Data'],  
+                labels: ['No Income Data'],
                 datasets: [{
-                  data: [1],  
+                  data: [1],
                   backgroundColor: ['#E0E0E0'],
                   datalabels: {
                     color: '#FFCE56'
@@ -439,13 +441,13 @@
               </tr>
             </thead>
             <tbody>
-              <tbody id="expenseRankingTable">
+            <tbody id="expenseRankingTable">
             </tbody>
           </table>
         </div>
       </div>
-    </div>   
-    
+    </div>
+
     <!-- Income Ranking Block -->
     <div class="col-lg-3 col-md-6">
       <div class="card">
@@ -462,7 +464,7 @@
               </tr>
             </thead>
             <tbody>
-              <tbody id="incomeRankingTable">
+            <tbody id="incomeRankingTable">
             </tbody>
           </table>
         </div>
