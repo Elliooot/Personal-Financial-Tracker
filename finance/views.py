@@ -156,47 +156,68 @@ def detail_view(request):
 @csrf_exempt
 @require_POST
 def add_transaction_view(request):
-    try:
-        date = request.POST.get('date')
-        category_name = request.POST.get('category')
-        transaction_type = request.POST.get('transaction_type') == 'true'
-        amount = request.POST.get('amount')
-        description = request.POST.get('description')
-        currency_code = request.POST.get('currency')
-        account_name = request.POST.get('account')
-
-        # Verify required fields
-        if not date or not category_name or not amount or not account_name:
-            return JsonResponse({'status': 'error', 'message': 'Date, category, amount and account are required'}, status=400)
-
-        category, _ = Category.objects.get_or_create(name=category_name, user=request.user)
-
-        account_obj, _ = Account.objects.get_or_create(
-            user=request.user,
-            account_name=account_name,
-            defaults={'balance': '0.00'}
-        )
-
-        currency, _ = Currency.objects.get_or_create(
-            currency_code=currency_code,
-            defaults={'exchange_rate': '1.00'}
-        )
-
-        transaction = Transaction.objects.create(
-            user=request.user,
-            account=account_obj,
-            date=date,
-            category=category,
-            transaction_type=transaction_type,
-            amount=amount,
-            description=description,
-            currency=currency
-        )
-
-        return JsonResponse({'status': 'success', 'transaction_id': transaction.id})
-
-    except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    if request.method == 'POST':
+        try:
+            # Debug - print the POST data
+            print("POST data:", request.POST)
+            
+            # Get category object
+            category_name = request.POST.get('category')
+            category = Category.objects.get(user=request.user, name=category_name)
+            
+            # Get currency object
+            currency_code = request.POST.get('currency')
+            currency = Currency.objects.get(currency_code=currency_code)
+            
+            # Get account object
+            account_name = request.POST.get('account')
+            account = Account.objects.get(user=request.user, account_name=account_name)
+            
+            
+            # Prepare form data
+            form_data = {
+                'date': request.POST.get('date'),
+                'category': category.id,
+                'transaction_type': request.POST.get('transaction_type') == 'true',
+                'currency': currency.id,
+                'amount': request.POST.get('amount'),
+                'account': account.id,
+                'description': request.POST.get('description', '')
+            }
+            
+            print("Form data:", form_data)
+            
+            # Create and validate form
+            form = TransactionForm(form_data, user=request.user)
+            if form.is_valid():
+                print("Form is valid")
+                transaction = form.save(commit=False)
+                transaction.user = request.user
+                transaction.save()
+                
+                return JsonResponse({
+                    'status': 'success',
+                    'transaction_id': transaction.id,
+                    'message': 'Transaction added successfully'
+                })
+            else:
+                print("Form errors:", form.errors.as_json())
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Form validation failed',
+                    'errors': form.errors.as_json()
+                })
+                
+        except Exception as e:
+            import traceback
+            print("Exception:", str(e))
+            print("Traceback:", traceback.format_exc())
+            return JsonResponse({
+                'status': 'error',
+                'message': str(e)
+            })
+    
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
 
 @csrf_exempt
 def delete_transaction_view(request):
@@ -500,22 +521,34 @@ def management_view(request):
 @csrf_exempt
 @require_POST
 def add_category(request):
-    category_name = request.POST.get('name')
-    is_income = request.POST.get('is_income') == 'true'
-
-    if not category_name:
-        return JsonResponse({'status': 'error', 'message': 'Category name is required'}, status=400)
-
-    category, created = Category.objects.get_or_create(
-        name=category_name,
-        user=request.user,
-        defaults={'is_income': is_income}
-    )
-
-    if not created:
-        return JsonResponse({'status': 'exists', 'message': 'Category already exists'})
-
-    return JsonResponse({'status': 'success', 'id': category.id, 'name': category.name})
+    if request.method == 'POST':
+        category_name = request.POST.get('name')
+        is_income = request.POST.get('is_income') == 'true'
+        
+        # Check if category already exists - but don't return an error if it doesn't
+        if Category.objects.filter(user=request.user, name=category_name, is_income=is_income).exists():
+            return JsonResponse({'status': 'exists', 'message': 'Category already exists'})
+        
+        # Create the category using the form
+        form = CategoryForm({
+            'name': category_name,
+            'is_income': is_income
+        }, user=request.user)
+        
+        if form.is_valid():
+            category = form.save(commit=False)
+            category.user = request.user
+            category.save()
+            
+            return JsonResponse({
+                'status': 'success',
+                'id': category.id,
+                'name': category.name
+            })
+        else:
+            return JsonResponse({'status': 'error', 'message': str(form.errors)})
+    
+    return JsonResponse({'status': 'error', 'message': 'Invalid request'})
 
 @csrf_exempt
 def delete_category_view(request):

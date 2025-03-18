@@ -1,4 +1,5 @@
 {% load static %}
+{% csrf_token %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -606,6 +607,8 @@
   {% block page_scripts %}{% endblock %}
 
   <script>
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
     let currentEditIndex = null;
     // Store current filter state
     let currentFilterState = {
@@ -1731,6 +1734,8 @@
 
     // Add Transaction Submit Handler
     document.getElementById('addTransaction').addEventListener('click', () => {
+      const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+      console.log("csrftoken: " + csrftoken);
       const newTransaction = {
         date: document.getElementById('addDate').value,
         category: document.getElementById('addCategory').value,
@@ -1757,6 +1762,7 @@
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRFToken': csrftoken
         },
         body: new URLSearchParams({
           'date': newTransaction.date,
@@ -2259,6 +2265,7 @@
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRFToken': csrftoken
         },
         body: new URLSearchParams({
           'name': categoryName,
