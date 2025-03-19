@@ -1857,7 +1857,6 @@
       
       console.log('Updating management tables with:', window.categories);
       
-      // 更新收入類別表格
       if (Array.isArray(window.categories.true)) {
         incomeTable.innerHTML = window.categories.true.length > 0 ?
           window.categories.true.map(cat => `
@@ -1873,7 +1872,6 @@
           '<tr><td colspan="4" class="text-center">No income categories available</td></tr>';
       }
     
-      // 更新支出類別表格
       if (Array.isArray(window.categories.false)) {
         expenseTable.innerHTML = window.categories.false.length > 0 ?
           window.categories.false.map(cat => `
@@ -1890,7 +1888,6 @@
       }
     }
       
-    // 全局变量：存储 budgets
     let budgets = [];
 
     function loadBudgets() {
@@ -1936,7 +1933,6 @@
       
       updateBudgetCategoryDropdown('editBudgetCategory');
       
-      // 設置選中的類別
       setTimeout(() => {
         document.getElementById('editBudgetCategory').value = budget.category_id;
       }, 100);

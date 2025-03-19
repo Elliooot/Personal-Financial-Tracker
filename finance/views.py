@@ -190,7 +190,6 @@ def add_transaction_view(request):
             # Create and validate form
             form = TransactionForm(form_data, user=request.user)
             if form.is_valid():
-                print("Form is valid")
                 transaction = form.save(commit=False)
                 transaction.user = request.user
                 transaction.save()
