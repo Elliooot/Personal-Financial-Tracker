@@ -69,7 +69,7 @@ class Account(models.Model):
 
 class Category(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    name = models.CharField(max_length=255, unique=True)
+    name = models.CharField(max_length=255)
     is_income = models.BooleanField(default=False)
 
     class Meta:

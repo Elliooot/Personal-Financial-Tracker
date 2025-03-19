@@ -50,7 +50,9 @@ def register(request):
             messages.success(request, 'Registration successful!')
             return redirect('detail')  # Go to home page
         except Exception as e:
-            messages.error(request, 'Registration failed')
+            messages.error(request, f'Registration failed: {str(e)}')
+            # 或者記錄到日誌系統
+            logger.error(f"User registration failed for {email}: {str(e)}")
             return redirect('register')
 
     return render(request, 'register.html')
