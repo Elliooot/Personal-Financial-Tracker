@@ -15,8 +15,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read #This is required for actions/checkout
-    env:
-      API_KEY: ${{ secrets.API_KEY }}
 
     steps:
       - uses: actions/checkout@v4
