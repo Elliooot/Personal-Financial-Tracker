@@ -152,7 +152,6 @@
   {{ currencies_json|default:"[]"|json_script:"currencies_data" }}
   {{ accounts_json|default:"[]"|json_script:"accounts_data" }}
 <script>
-  // 直接設置類別數據
   window.categories = {{ categories_json|safe }};
   
   console.log('Directly set categories:', window.categories);
