@@ -2887,13 +2887,12 @@
 
     // Initialize data
     function initializeData() {
-      // 只在特定頁面才初始化數據
-      if (!document.getElementById('detail-page') && 
+      if (!document.getElementById('detail-page') && !document.getElementById('statistics-page') && 
       !document.getElementById('management-page')) {
-        return; // 如果不是這些頁面，直接返回
+        return;
       }
       
-      // 初始化交易數據
+      // Initialize transactions data
       const transactionsDataElement = document.getElementById('transactions_data');
       if (transactionsDataElement) {
         try {
