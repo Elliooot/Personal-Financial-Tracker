@@ -592,17 +592,15 @@ def delete_category_view(request):
         except Category.DoesNotExist:
             return JsonResponse({'status': 'error', 'message': 'Category not found'}, status=404)
         
-        # 檢查是否有交易使用此類別
         if category.transaction_set.exists():
             return JsonResponse({
                 'status': 'error', 
-                'message': '無法刪除：有交易使用此類別。請先刪除或重新分類這些交易。'
+                'message': 'Cannot delete: There are transactions using this category. Please delete or reclassify these transactions first.'
             }, status=400)
         
-        # 刪除類別
         category.delete()
 
-        return JsonResponse({'status': 'success', 'message': '類別已成功刪除'})
+        return JsonResponse({'status': 'success', 'message': 'Category deleted successfully'})
     except Exception as e:
         import traceback
         traceback.print_exc()

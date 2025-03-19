@@ -657,6 +657,8 @@
     // Function to handle page size change
     function changePageSize(newSize) {
       pageSize = parseInt(newSize);
+      // Save to localStorage
+      localStorage.setItem('preferredPageSize', pageSize);
       currentPage = 1; // Reset to first page when changing page size
       refreshTables();
     }
@@ -3010,6 +3012,17 @@
       
       if (pageSizeSelector) {
         pageSizeSelector.addEventListener('change', (e) => changePageSize(e.target.value));
+      }
+
+      const savedPageSize = localStorage.getItem('preferredPageSize');
+      if (savedPageSize) {
+          pageSize = parseInt(savedPageSize);
+          
+          // Update the page size selector to reflect saved preference
+          const pageSizeSelector = document.getElementById('pageSizeSelector');
+          if (pageSizeSelector) {
+              pageSizeSelector.value = savedPageSize;
+          }
       }
 
       if(document.getElementById('detail-page')){

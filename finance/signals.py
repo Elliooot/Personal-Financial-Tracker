@@ -22,16 +22,14 @@ def create_default_categories(sender, instance, created, **kwargs):
         
         # expense categories
         default_expense_categories = [
-            "Rent",
-            "Utilities",
             "Food",
+            "Housing",
+            "Clothing",
+            "Utilities",
             "Transportation",
             "Entertainment",
             "Health",
-            "Insurance",
-            "Education",
-            "Gift",
-            "Other Expense"
+            "Other Expenses"
         ]
         
         # create income categories
