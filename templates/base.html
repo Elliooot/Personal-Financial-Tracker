@@ -2305,7 +2305,7 @@
       .then(data => {
         if (data.status === 'success') {
           window.categories['true'].push({
-            id: data.id || Date.now(), // 如果後端沒有返回ID，使用時間戳作為臨時ID
+            id: data.id || Date.now(),
             name: data.name || categoryName,
             transaction_count: 0,
             total_amount: "0.00"

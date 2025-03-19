@@ -51,24 +51,27 @@ def create_default_categories(sender, instance, created, **kwargs):
 @receiver(post_save, sender=User)
 def create_default_currencies(sender, instance, created, **kwargs):
     if created:
-        default_currencies = ['GBP', 'EUR', 'USD']
-        for currency_code in default_currencies:
+        default_currencies = [
+            {'code': 'GBP', 'rate': 1.0},
+            {'code': 'EUR', 'rate': 1.12},
+            {'code': 'USD', 'rate': 1.29}
+        ]
+
+        for currency_data in default_currencies:
             try:
+                currency_code = currency_data['code']
+                exchange_rate = currency_data['rate']
+                
                 currency, created_currency = Currency.objects.get_or_create(
                     user=None,
                     currency_code=currency_code,
-                    defaults={'exchange_rate': 1.0}
+                    defaults={'exchange_rate': exchange_rate}
                 )
                 
-                if created_currency:
-                    try:
-                        exchange_rate = get_exchange_rate_with_gbp_base(currency_code)
-                        currency.exchange_rate = exchange_rate
-                        currency.save()
-                    except Exception as e:
-                        logger.warning(f"Failed to get exchange rate for {currency_code}: {str(e)}")
-                
-                logger.info(f"Ensured system default currency {currency_code} exists.")
+                if not created_currency and currency.exchange_rate != exchange_rate:
+                    currency.exchange_rate = exchange_rate
+                    currency.save()
+                    
             except Exception as e:
                 logger.error(f"Error ensuring default currency {currency_code}: {str(e)}")
 
