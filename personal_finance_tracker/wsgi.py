@@ -19,10 +19,10 @@ sys.path.append(project_path)
 sys.path.append(venv_path)
 
 # poiting to the project settings
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "personal_finance_tracker.settings")
+# os.environ.setdefault("DJANGO_SETTINGS_MODULE", "personal_finance_tracker.settings")
 
 from django.core.wsgi import get_wsgi_application
 
-# os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'personal_finance_tracker.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'personal_finance_tracker.settings')
 
 application = get_wsgi_application()
