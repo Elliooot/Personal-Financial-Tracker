@@ -213,6 +213,7 @@ def add_transaction_view(request):
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
 
 @csrf_exempt
+@require_POST
 def delete_transaction_view(request):
     if request.method != 'POST':
         return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
@@ -294,6 +295,7 @@ def update_transaction_view(request):
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     
 @csrf_exempt
+@require_POST
 def toggle_save_transaction(request):
     try:
         transaction_id = request.POST.get('transaction_id')
@@ -321,6 +323,8 @@ def toggle_save_transaction(request):
 def statistics_view(request):
     return render(request, 'statistics.html', {})
 
+
+@login_required
 def get_transaction_dates(request):
     # Get Year and Month from Transactions
     transactions = Transaction.objects.filter(user=request.user)
@@ -349,6 +353,7 @@ def get_transaction_dates(request):
         'monthsByYear': months_by_year
     })
 
+@login_required
 def get_statistics_data(request):
     transactions = Transaction.objects.filter(user=request.user)
     budgets = Budget.objects.filter(user=request.user)
@@ -470,6 +475,7 @@ def get_statistics_data(request):
         logger.error(f"Error in get_statistics_data: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)
 
+@login_required
 def management_view(request):
     categories = Category.objects.filter(user=request.user).annotate(
         transaction_count=Count('transaction'),
@@ -569,6 +575,7 @@ def add_category(request):
     return JsonResponse({'status': 'error', 'message': 'Invalid request'})
 
 @csrf_exempt
+@require_POST
 def delete_category_view(request):
     if request.method != 'POST':
         return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
@@ -673,6 +680,7 @@ def update_budget_view(request):
 
 @login_required
 @csrf_exempt
+@require_POST
 def delete_budget_view(request):
     if request.method != 'POST':
         return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
@@ -694,6 +702,7 @@ def delete_budget_view(request):
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 @login_required
+@csrf_exempt
 def get_budgets_view(request):
     try:
         budgets = Budget.objects.filter(user=request.user)
@@ -732,6 +741,7 @@ def get_budgets_view(request):
         return JsonResponse({'status': 'error', 'message': f'獲取預算時發生錯誤: {str(e)}'}, status=500)
     
 @login_required
+@csrf_exempt
 def get_currencies_view(request):
     try:
         system_currencies = Currency.objects.filter(user=None)
@@ -768,6 +778,7 @@ def get_currencies_view(request):
         }, status=500)
 
 @login_required
+@csrf_exempt
 def get_available_currencies_view(request):
     try:
         system_currencies = Currency.objects.filter(user=None)
@@ -850,6 +861,7 @@ def add_currency_view(request):
     return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
 
 @login_required
+@csrf_exempt
 def refresh_exchange_rates_view(request):
     """
     View to refresh exchange rates for the current user's currencies.
@@ -1142,6 +1154,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS("Default currencies have been added to existing users"))
 
 @csrf_exempt
+@login_required
 def delete_currency_view(request):
     if request.method == 'POST':
         currency_id = request.POST.get('currency_id')
@@ -1157,6 +1170,7 @@ def delete_currency_view(request):
     return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
 
 @csrf_exempt
+@login_required
 def get_available_currencies(request):
     system_currencies = Currency.objects.filter(user=None)
     user_currencies = Currency.objects.filter(user=request.user)
@@ -1164,6 +1178,7 @@ def get_available_currencies(request):
     return all_currencies
 
 @csrf_exempt
+@login_required
 def add_account_view(request):
     if request.method == 'POST':
         account_name = request.POST.get('account_name')
@@ -1189,6 +1204,7 @@ def add_account_view(request):
     return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
 
 @csrf_exempt
+@login_required
 def delete_account_view(request):
     if request.method == 'POST':
         account_id = request.POST.get('account_id')
