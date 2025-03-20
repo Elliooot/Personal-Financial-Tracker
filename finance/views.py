@@ -14,7 +14,7 @@ from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Q, Count, Sum
-from finance.forms import CategoryForm, TransactionForm
+from finance.forms import CategoryForm, TransactionForm, BudgetForm, CurrencyForm, AccountForm
 from finance.models import User, Account, Category, Transaction, Currency, Budget
 from django.contrib import messages
 from django.contrib.auth import authenticate, login as auth_login, logout
@@ -159,16 +159,22 @@ def detail_view(request):
 def add_transaction_view(request):
     if request.method == 'POST':
         try:
+            # Prepare form data with proper relationships
             category_name = request.POST.get('category')
-            category = Category.objects.get(user=request.user, name=category_name)
-            
             currency_code = request.POST.get('currency')
-            currency = Currency.objects.get(currency_code=currency_code)
-            
             account_name = request.POST.get('account')
-            account = Account.objects.get(user=request.user, account_name=account_name)
             
-            # Prepare form data
+            try:
+                category = Category.objects.get(user=request.user, name=category_name)
+                currency = Currency.objects.get(currency_code=currency_code)
+                account = Account.objects.get(user=request.user, account_name=account_name)
+            except (Category.DoesNotExist, Currency.DoesNotExist, Account.DoesNotExist) as e:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': f'Could not find required relationship: {str(e)}'
+                }, status=400)
+            
+            # Create form data
             form_data = {
                 'date': request.POST.get('date'),
                 'category': category.id,
@@ -178,8 +184,6 @@ def add_transaction_view(request):
                 'account': account.id,
                 'description': request.POST.get('description', '')
             }
-            
-            print("Form data:", form_data)
             
             # Create and validate form
             form = TransactionForm(form_data, user=request.user)
@@ -194,7 +198,6 @@ def add_transaction_view(request):
                     'message': 'Transaction added successfully'
                 })
             else:
-                print("Form errors:", form.errors.as_json())
                 return JsonResponse({
                     'status': 'error',
                     'message': 'Form validation failed',
@@ -241,55 +244,52 @@ def update_transaction_view(request):
         if not transaction_id:
             return JsonResponse({'status': 'error', 'message': 'Transaction ID required'}, status=400)
 
-        description = request.POST.get('description', '').strip()
-        transaction = Transaction.objects.get(id=transaction_id)
-        transaction.description = description if description else None
+        try:
+            transaction = Transaction.objects.get(id=transaction_id, user=request.user)
+        except Transaction.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Transaction not found'}, status=404)
 
-        # Get POST data
-        date = request.POST.get('date')
+        # Prepare form data with proper relationships
         category_name = request.POST.get('category')
-        transaction_type = request.POST.get('transaction_type') == 'true'
-        amount = request.POST.get('amount')
         currency_code = request.POST.get('currency')
         account_name = request.POST.get('account')
+        
+        try:
+            category = Category.objects.get(user=request.user, name=category_name)
+            currency = Currency.objects.get(currency_code=currency_code)
+            account = Account.objects.get(user=request.user, account_name=account_name)
+        except (Category.DoesNotExist, Currency.DoesNotExist, Account.DoesNotExist) as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': f'Could not find required relationship: {str(e)}'
+            }, status=400)
+        
+        # Create form data
+        form_data = {
+            'date': request.POST.get('date'),
+            'category': category.id,
+            'transaction_type': request.POST.get('transaction_type') == 'true',
+            'currency': currency.id,
+            'amount': request.POST.get('amount'),
+            'account': account.id,
+            'description': request.POST.get('description', '')
+        }
+        
+        # Create and validate form with instance
+        form = TransactionForm(form_data, instance=transaction, user=request.user)
+        if form.is_valid():
+            updated_transaction = form.save()
+            return JsonResponse({
+                'status': 'success',
+                'description': updated_transaction.description or ''
+            })
+        else:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Form validation failed',
+                'errors': form.errors.as_json()
+            })
 
-        # Handle category
-        if category_name:
-            category, _ = Category.objects.get_or_create(name=category_name)
-            transaction.category = category
-
-        # Handle currency (ForeignKey)
-        if currency_code:
-            currency, _ = Currency.objects.get_or_create(
-                currency_code=currency_code,
-                defaults={'exchange_rate': '1.00'}
-            )
-            transaction.currency = currency
-
-        # Handle account
-        if account_name:
-            account_obj, _ = Account.objects.get_or_create(
-                user=request.user,
-                account_name=account_name,
-                defaults={'balance': '0.00'}
-            )
-            transaction.account = account_obj
-
-        # Update other fields
-        if date:
-            transaction.date = date
-            transaction.transaction_type = transaction_type
-        if amount:
-            transaction.amount = amount
-        if description:
-            transaction.description = description
-
-        transaction.save()
-
-        return JsonResponse({'status': 'success', 'description': transaction.description or '' })
-
-    except Transaction.DoesNotExist:
-        return JsonResponse({'status': 'error', 'message': 'Transaction not found'}, status=404)
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     
@@ -547,10 +547,6 @@ def add_category(request):
         category_name = request.POST.get('name')
         is_income = request.POST.get('is_income') == 'true'
         
-        # Check if category already exists - but don't return an error if it doesn't
-        if Category.objects.filter(user=request.user, name=category_name, is_income=is_income).exists():
-            return JsonResponse({'status': 'exists', 'message': 'Category already exists'})
-        
         # Create the category using the form
         form = CategoryForm({
             'name': category_name,
@@ -568,6 +564,8 @@ def add_category(request):
                 'name': category.name
             })
         else:
+            if 'A category with this name already exists.' in str(form.errors):
+                return JsonResponse({'status': 'exists', 'message': 'Category already exists'})
             return JsonResponse({'status': 'error', 'message': str(form.errors)})
     
     return JsonResponse({'status': 'error', 'message': 'Invalid request'})
@@ -612,27 +610,29 @@ def add_budget_view(request):
         if not period or not category_id or not budget_amount:
             return JsonResponse({'status': 'error', 'message': 'All fields are required'}, status=400)
         
-        # Convert year and month strings to date objects (using the first day of the month)
-        from datetime import datetime
-        period_date = datetime.strptime(period + "-01", "%Y-%m-%d").date()
+        # Use the form for validation
+        form = BudgetForm({
+            'period': period,
+            'category': category_id,
+            'budget_amount': budget_amount
+        }, user=request.user)
         
-        category = Category.objects.get(id=category_id)
-        
-        budget, created = Budget.objects.update_or_create(
-            user=request.user,
-            category=category,
-            period=period_date,
-            defaults={'budget_amount': budget_amount}
-        )
-        
-        return JsonResponse({
-            'status': 'success', 
-            'id': budget.id,
-            'message': 'Budget added successfully'
-        })
-        
-    except Category.DoesNotExist:
-        return JsonResponse({'status': 'error', 'message': 'Category not found'}, status=404)
+        if form.is_valid():
+            budget = form.save(commit=False)
+            budget.user = request.user
+            budget.save()
+            
+            return JsonResponse({
+                'status': 'success', 
+                'id': budget.id,
+                'message': 'Budget added successfully'
+            })
+        else:
+            return JsonResponse({
+                'status': 'error',
+                'message': str(form.errors)
+            }, status=400)
+            
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
@@ -641,35 +641,27 @@ def add_budget_view(request):
 def update_budget_view(request):
     try:
         budget_id = request.POST.get('budget_id')
-        period = request.POST.get('period')
-        category_id = request.POST.get('category_id')
-        budget_amount = request.POST.get('budget_amount')
         
         if not budget_id:
             return JsonResponse({'status': 'error', 'message': 'Budget ID is required'}, status=400)
             
-        budget = Budget.objects.get(id=budget_id, user=request.user)
+        try:
+            budget = Budget.objects.get(id=budget_id, user=request.user)
+        except Budget.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Budget not found'}, status=404)
         
-        if period:
-            from datetime import datetime
-            period_date = datetime.strptime(period + "-01", "%Y-%m-%d").date()
-            budget.period = period_date
-            
-        if category_id:
-            category = Category.objects.get(id=category_id)
-            budget.category = category
-            
-        if budget_amount:
-            budget.budget_amount = budget_amount
-            
-        budget.save()
+        # Use the form for validation
+        form = BudgetForm(request.POST, instance=budget, user=request.user)
         
-        return JsonResponse({'status': 'success', 'message': 'Budget updated successfully'})
+        if form.is_valid():
+            form.save()
+            return JsonResponse({'status': 'success', 'message': 'Budget updated successfully'})
+        else:
+            return JsonResponse({
+                'status': 'error',
+                'message': str(form.errors)
+            }, status=400)
         
-    except Budget.DoesNotExist:
-        return JsonResponse({'status': 'error', 'message': 'Budget not found'}, status=404)
-    except Category.DoesNotExist:
-        return JsonResponse({'status': 'error', 'message': 'Category not found'}, status=404)
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
@@ -816,9 +808,19 @@ def add_currency_view(request):
             return JsonResponse({'status': 'error', 'message': 'Currency code is required'}, status=400)
         
         try:
-            # Check if currency already exists
-            if Currency.objects.filter(currency_code=currency_code).exists():
-                return JsonResponse({'status': 'exists', 'message': 'Currency already exists'})
+            # Check if currency already exists using the form
+            form = CurrencyForm({
+                'currency_code': currency_code,
+            }, user=request.user)
+            
+            # Only validate the currency_code field
+            if not form.is_valid():
+                if 'This currency already exists.' in str(form.errors.get('currency_code', [])):
+                    return JsonResponse({'status': 'exists', 'message': 'Currency already exists'})
+                return JsonResponse({
+                    'status': 'error',
+                    'message': str(form.errors)
+                }, status=400)
             
             # Get exchange rate using GBP as base currency
             try:
@@ -829,23 +831,32 @@ def add_currency_view(request):
                     'message': f'Failed to fetch exchange rate: {str(e)}'
                 }, status=500)
             
-            # Create new currency
-            currency = Currency.objects.create(
-                user=request.user,  # Associate with current user
-                currency_code=currency_code,
-                exchange_rate=exchange_rate
-            )
+            # Create full form with exchange rate
+            full_form = CurrencyForm({
+                'currency_code': currency_code,
+                'exchange_rate': exchange_rate
+            }, user=request.user)
             
-            return JsonResponse({
-                'status': 'success', 
-                'message': 'Currency added successfully',
-                'currency': {
-                    'id': currency.id,
-                    'currency_code': currency.currency_code,
-                    'exchange_rate': float(currency.exchange_rate),
-                    'last_updated': currency.last_updated.isoformat()
-                }
-            })
+            if full_form.is_valid():
+                currency = full_form.save(commit=False)
+                currency.user = request.user
+                currency.save()
+                
+                return JsonResponse({
+                    'status': 'success', 
+                    'message': 'Currency added successfully',
+                    'currency': {
+                        'id': currency.id,
+                        'currency_code': currency.currency_code,
+                        'exchange_rate': float(currency.exchange_rate),
+                        'last_updated': currency.last_updated.isoformat()
+                    }
+                })
+            else:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': str(full_form.errors)
+                }, status=400)
         
         except Exception as e:
             logger.error(f"Error adding currency: {str(e)}")
@@ -1172,26 +1183,33 @@ def get_available_currencies(request):
 @login_required
 def add_account_view(request):
     if request.method == 'POST':
-        account_name = request.POST.get('account_name')
-        account_type = request.POST.get('account_type')
-        balance = request.POST.get('balance')
+        # Use the form for validation
+        form = AccountForm(request.POST, user=request.user)
         
-        try:
-            account = Account.objects.create(
-                user=request.user,
-                account_name=account_name,
-                account_type=account_type,
-                balance=balance,
-            )
-            return JsonResponse({'status': 'success', 'message': 'Account added successfully', 'account': {
-                'id': account.id,
-                'account_name': account.account_name,
-                'account_type': account.account_type,
-                'balance': str(account.balance)
+        if form.is_valid():
+            account = form.save(commit=False)
+            account.user = request.user
+            account.save()
+            
+            return JsonResponse({
+                'status': 'success', 
+                'message': 'Account added successfully', 
+                'account': {
+                    'id': account.id,
+                    'account_name': account.account_name,
+                    'account_type': account.account_type,
+                    'balance': str(account.balance)
                 }
             })
-        except Exception as e:
-            return JsonResponse({'status': 'error', 'message': f'Add account failed: {str(e)}'}, status=500)
+        else:
+            if 'An account with this name already exists.' in str(form.errors.get('account_name', [])):
+                return JsonResponse({'status': 'exists', 'message': 'Account already exists'})
+            
+            return JsonResponse({
+                'status': 'error',
+                'message': str(form.errors)
+            }, status=400)
+            
     return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
 
 @login_required
