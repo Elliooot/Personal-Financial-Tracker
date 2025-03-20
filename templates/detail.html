@@ -210,6 +210,7 @@
 {% endblock %}
 
 {% block page_scripts %}
+  <!-- Populate data from views.py to JavaScript -->
   {{ transactions|default:"[]"|json_script:"transactions_data" }}
   {{ categories_json|default:"{}"|json_script:"categories_data" }}
   {{ accounts_json|default:"[]"|json_script:"accounts_data" }}

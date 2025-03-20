@@ -128,7 +128,7 @@ def detail_view(request):
         'false': expense_categories 
     }
     
-    # 序列化帳戶數據
+    # Serialize account data
     accounts_data = [
         {
             'id': a.id,
@@ -138,7 +138,7 @@ def detail_view(request):
         } for a in accounts
     ]
     
-    # 序列化貨幣數據
+    # Serialize currency data
     currencies_data = [
         {
             'id': c.id,
@@ -159,21 +159,14 @@ def detail_view(request):
 def add_transaction_view(request):
     if request.method == 'POST':
         try:
-            # Debug - print the POST data
-            print("POST data:", request.POST)
-            
-            # Get category object
             category_name = request.POST.get('category')
             category = Category.objects.get(user=request.user, name=category_name)
             
-            # Get currency object
             currency_code = request.POST.get('currency')
             currency = Currency.objects.get(currency_code=currency_code)
             
-            # Get account object
             account_name = request.POST.get('account')
             account = Account.objects.get(user=request.user, account_name=account_name)
-            
             
             # Prepare form data
             form_data = {
@@ -703,33 +696,26 @@ def delete_budget_view(request):
 @login_required
 def get_budgets_view(request):
     try:
-        # 獲取當前用戶的所有預算
         budgets = Budget.objects.filter(user=request.user)
         
-        # 序列化預算數據
         budget_list = []
         for budget in budgets:
-            # 計算剩餘金額
-            # 獲取與該預算相同月份和類別的交易
             from django.db.models import Sum
             from datetime import datetime
             
             year = budget.period.year
             month = budget.period.month
             
-            # 獲取該月的支出總額
             spent_amount = Transaction.objects.filter(
                 user=request.user,
                 category=budget.category,
                 date__year=year,
                 date__month=month,
-                transaction_type=False  # 僅支出交易
+                transaction_type=False
             ).aggregate(total=Sum('amount'))['total'] or 0
             
-            # 計算剩餘金額
             remaining_amount = budget.budget_amount - spent_amount
             
-            # 添加預算信息
             budget_dict = {
                 'id': budget.id,
                 'period': budget.period.strftime('%Y-%m'),
