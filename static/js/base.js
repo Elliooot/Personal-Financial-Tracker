@@ -324,6 +324,7 @@ function toggleSaveTransaction(index, fromSavedView = false) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrftoken
         },
         body: `transaction_id=${transactionId}`
     })
@@ -610,6 +611,7 @@ function deleteTransaction(index) {
     method: 'POST',
     headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': csrftoken
     },
     body: `transaction_id=${transactionId}`
     })
@@ -1128,6 +1130,7 @@ document.getElementById('saveChanges').addEventListener('click', () => {
         method: 'POST',
         headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': csrftoken
         },
         body: new URLSearchParams({
         'id': transactionId,
@@ -1374,6 +1377,7 @@ document.getElementById('saveBudget').addEventListener('click', () => {
     method: 'POST',
     headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': csrftoken
     },
     body: new URLSearchParams({
         'period': yearMonth,
@@ -1427,6 +1431,7 @@ document.getElementById('updateBudget').addEventListener('click', () => {
     method: 'POST',
     headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': csrftoken
     },
     body: new URLSearchParams({
         'budget_id': budgetId,
@@ -1467,6 +1472,7 @@ function deleteBudget(budgetId) {
     method: 'POST',
     headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': csrftoken
     },
     body: `budget_id=${budgetId}`
     })
@@ -1634,6 +1640,7 @@ function deleteCategory(is_income, categoryId) {
     method: 'POST',
     headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': csrftoken
     },
     body: `category_id=${categoryId}`
     })
@@ -1745,6 +1752,7 @@ document.getElementById('saveExpenseCategory').addEventListener('click', () => {
     method: 'POST',
     headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': csrftoken
     },
     body: new URLSearchParams({
         'name': categoryName,
@@ -1785,6 +1793,7 @@ function loadAvailableCurrencies() {
     method: 'GET',
     headers: {
         'Content-Type': 'application/json',
+        'X-CSRFToken': csrftoken
     }
     })
     .then(response => response.json())
@@ -1929,6 +1938,7 @@ document.getElementById('saveCurrency').addEventListener('click', () => {
     method: 'POST',
     headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': csrftoken
     },
     body: new URLSearchParams({
         'currency_code': selectedCurrency
@@ -1961,6 +1971,7 @@ function deleteCurrency(id) {
     method: 'POST',
     headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': csrftoken
     },
     body: `currency_id=${id}`
     })
@@ -2171,6 +2182,7 @@ function saveAccountOrderToBackend() {
     method: 'POST',
     headers: {
         'Content-Type': 'application/json',
+        'X-CSRFToken': csrftoken
     },
     body: JSON.stringify({
         account_ids: accountIds
@@ -2207,6 +2219,7 @@ document.getElementById('saveAccount').addEventListener('click', () => {
     method: 'POST',
     headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': csrftoken
     },
     body: new URLSearchParams({
         'account_name': accountName,
@@ -2245,6 +2258,7 @@ function deleteAccount(account_id) {
     method: 'POST',
     headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': csrftoken
     },
     body: `account_id=${account_id}`
     })

@@ -234,7 +234,6 @@ def delete_transaction_view(request):
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     
-@csrf_exempt
 @require_POST
 def update_transaction_view(request):
     try:
@@ -542,7 +541,6 @@ def management_view(request):
         'accounts_json': accounts_data,
     })
 
-@csrf_exempt
 @require_POST
 def add_category(request):
     if request.method == 'POST':
@@ -574,7 +572,6 @@ def add_category(request):
     
     return JsonResponse({'status': 'error', 'message': 'Invalid request'})
 
-@csrf_exempt
 @require_POST
 def delete_category_view(request):
     if request.method != 'POST':
@@ -605,7 +602,6 @@ def delete_category_view(request):
         traceback.print_exc()
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     
-@csrf_exempt
 @require_POST
 def add_budget_view(request):
     try:
@@ -641,7 +637,6 @@ def add_budget_view(request):
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 @login_required
-@csrf_exempt
 @require_POST
 def update_budget_view(request):
     try:
@@ -679,7 +674,6 @@ def update_budget_view(request):
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 @login_required
-@csrf_exempt
 @require_POST
 def delete_budget_view(request):
     if request.method != 'POST':
@@ -812,7 +806,6 @@ def get_available_currencies_view(request):
             'message': str(e)
         }, status=500)
     
-@csrf_exempt
 @login_required
 def add_currency_view(request):
     from finance.currency_utils import get_exchange_rate_with_gbp_base
@@ -1153,7 +1146,6 @@ class Command(BaseCommand):
             
         self.stdout.write(self.style.SUCCESS("Default currencies have been added to existing users"))
 
-@csrf_exempt
 @login_required
 def delete_currency_view(request):
     if request.method == 'POST':
@@ -1177,7 +1169,6 @@ def get_available_currencies(request):
     all_currencies = list(system_currencies) + list(user_currencies)
     return all_currencies
 
-@csrf_exempt
 @login_required
 def add_account_view(request):
     if request.method == 'POST':
@@ -1203,7 +1194,6 @@ def add_account_view(request):
             return JsonResponse({'status': 'error', 'message': f'Add account failed: {str(e)}'}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
 
-@csrf_exempt
 @login_required
 def delete_account_view(request):
     if request.method == 'POST':
@@ -1247,7 +1237,6 @@ def get_accounts_view(request):
         print(f"Error in get_accounts_view: {str(e)}")
         return JsonResponse({'status': 'error', 'message': f'Get accounts failed: {str(e)}'}, status=500)
     
-@csrf_exempt
 @login_required
 def order_accounts_view(request): 
     if request.method == 'POST':
