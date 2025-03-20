@@ -425,7 +425,7 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          <button type="submit" class="btn btn-primary" id="addTransaction">Add</button>
+          <button type="button" class="btn btn-primary" id="addTransaction">Add</button>
         </div>
       </div>
     </div>
@@ -805,8 +805,19 @@
           console.log('Not on detail page, skipping table refresh.');
           return;
       }
+      
+      if(document.getElementById('description-filter')) {
+        document.getElementById('description-filter').value = '';
+      }
+      if(document.getElementById('category-filter')) {
+        document.getElementById('category-filter').value = 'all';
+      }
 
-      const filteredData = getFilteredTransactions();
+      const filteredData = getFilteredTransactions().map(transaction => ({
+        ...transaction,
+        description: transaction.description || ''
+      }));
+
       updateTable(filteredData, "transaction-table-month");
       updateTable(filteredData, "transaction-table-category");
       updateTable(filteredData, "transaction-table-saved");
@@ -844,8 +855,12 @@
             const btnClass = t.is_saved ? "btn-secondary" : "btn-success";
             const btnText = t.is_saved ? "Unsave" : "Save";
             
-            // For saved view, use the index, for paginated view, calculate the real index
-            const realIndex = isSavedView ? index : displayData.indexOf(t);
+            const description = t.description ?? '';
+
+            // Find the index of the original transaction in the complete transactions array
+            const originalIndex = window.transactions.findIndex(original => 
+                original.id === t.id
+            );
             
             return `<tr>
                 <td>${t.date}</td>
@@ -856,13 +871,13 @@
                 <td>${t.account_name}</td>
                 <td>${t.description}</td>
                 <td>
-                    <button class="btn ${btnClass} btn-sm" onclick="toggleSaveTransaction(${realIndex}, ${isSavedView})">
+                    <button class="btn ${btnClass} btn-sm" onclick="toggleSaveTransaction(${originalIndex}, ${isSavedView})">
                         ${btnText}
                     </button>
                 </td>
                 <td>
-                    <button class="btn btn-warning btn-sm" onclick="openEditModal(${realIndex})">Edit</button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteTransaction(${realIndex})">Delete</button>
+                    <button class="btn btn-warning btn-sm" onclick="openEditModal(${originalIndex})">Edit</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteTransaction(${originalIndex})">Delete</button>
                 </td>
             </tr>`;
         }).join('');
@@ -910,9 +925,6 @@
 
         const transactionId = transaction.id;
         const currentSavedState = transaction.is_saved;
-
-        console.log(`Toggling transaction ${transactionId} with current saved state: ${currentSavedState}`);
-        console.log(`Operating from saved view: ${fromSavedView}`);
         
         let saveUrl = 'toggle-save-transaction/';
         const urlMeta = document.querySelector('meta[name="toggle-save-transaction-url"]');
@@ -1128,7 +1140,7 @@
 
       window.categories[selectedType].forEach(category => {
         const option = document.createElement('option');
-        option.value = category.name; // 使用 category name 作為值
+        option.value = category.name;
         option.textContent = category.name;
         categoryDropdown.appendChild(option);
       });
@@ -1141,13 +1153,11 @@
 
       categoryDropdown.innerHTML = '';
 
-      // 添加一個預設選項
       const defaultOption = document.createElement('option');
       defaultOption.value = '';
       defaultOption.textContent = '-- Select Category --';
       categoryDropdown.appendChild(defaultOption);
 
-      // 添加所有支出類別
       if (window.categories && window.categories['false']) {
         window.categories['false'].forEach(category => {
           const option = document.createElement('option');
@@ -1179,7 +1189,6 @@
       console.log('Updated account dropdown with accounts:', window.accounts.length);
     }
 
-    // 同樣為編輯模態框創建更新函數
     function updateEditAccountDropdown() {
       const accountDropdown = document.getElementById('editAccount');
       if (!accountDropdown) return;
@@ -1698,6 +1707,9 @@
       if (currentEditIndex !== null) {
         const transaction = window.transactions[currentEditIndex];
         const transactionId = transaction.id;
+
+        // get the current description value
+        const description = document.getElementById('editDescription').value.trim();
         
         const updatedTransaction = {
           date: document.getElementById('editDate').value,
@@ -1706,7 +1718,7 @@
           currency: document.getElementById('editCurrency').value,
           amount: document.getElementById('editAmount').value,
           account: document.getElementById('editAccount').value,
-          description: document.getElementById('editDescription').value || ''
+          description: description || null
         };
         
         // Validate required fields
@@ -1739,23 +1751,31 @@
             'currency': updatedTransaction.currency,
             'amount': updatedTransaction.amount,
             'account': updatedTransaction.account,
-            'description': updatedTransaction.description
+            'description': description // Explicitly send description to avoid null value
           })
         })
-        .then(response => response.json())
+        .then(response => {
+          if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
           if (data.status === 'success') {
             // Update local transaction data
-            Object.assign(window.transactions[currentEditIndex], updatedTransaction);
+            // Object.assign(window.transactions[currentEditIndex], updatedTransaction);
+            window.transactions[currentEditIndex] = {
+              ...window.transactions[currentEditIndex],
+              ...updatedTransaction,
+              description: data.description ?? ''  // 使用伺服器返回的描述
+            };
             
-            // Refresh UI
             refreshTables();
             
             // Reload to get updated category totals
-            window.location.reload();
+            // window.location.reload();
           } else {
             console.error('Failed to update:', data.message);
-            alert(`Failed to update: ${data.message}`);
           }
         })
         .catch(error => {
@@ -2736,30 +2756,24 @@
           e.preventDefault();
           if (!draggedRow || row === draggedRow) return;
           
-          // 獲取行索引
           const fromIndex = parseInt(draggedRow.getAttribute('data-index'));
           const toIndex = parseInt(row.getAttribute('data-index'));
           
-          // 重新排序 accounts 數組
+          // Reorder the accounts array
           const movedAccount = window.accounts.splice(fromIndex, 1)[0];
           window.accounts.splice(toIndex, 0, movedAccount);
           
-          // 更新表格顯示
           updateAccountTable();
           
-          // 直接保存排序到後端，不顯示保存按鈕
           saveAccountOrderToBackend();
         });
       });
       
-      // 保存順序按鈕事件
       const saveButton = document.getElementById('saveAccountOrder');
       if (saveButton) {
-        // 移除舊的事件監聽器
         const newSaveButton = saveButton.cloneNode(true);
         saveButton.parentNode.replaceChild(newSaveButton, saveButton);
         
-        // 添加新的事件監聽器
         newSaveButton.addEventListener('click', saveAccountOrder);
       }
     }
@@ -2925,7 +2939,7 @@
         }
       }
       
-      // 只有在尚未設置 window.categories 時才初始化類別數據
+      // Initialize category data only if window.categories has not been set yet
       if (!window.categories) {
         const categoriesDataElement = document.getElementById('categories_data');
         if (categoriesDataElement) {
@@ -2942,7 +2956,6 @@
         }
       }
       
-      // 確保類別結構完整
       if (!window.categories) {
         console.warn('Categories still not defined after initialization, creating empty object');
         window.categories = {};
@@ -2974,21 +2987,31 @@
   
       tabLinks.forEach(tab => {
         tab.addEventListener('shown.bs.tab', function(event) {
-          if (event.target.getAttribute('href') === '#by-month' || event.target.getAttribute('href') === '#by-saved') {
-            currentFilterState.category = 'all';
-            currentFilterState.transactionType = 'all';
-            
-            document.querySelectorAll('.btn-secondary, .btn-success, .btn-danger').forEach(btn => {
-              btn.classList.remove('active');
-            });
-            document.querySelector('.btn-secondary').classList.add('active');
-            
-            if (document.getElementById('category-filter')) {
-              document.getElementById('category-filter').value = 'all';
-            }
-            
-            refreshTables();
+          currentFilterState = {
+            transactionType: 'all',
+            category: 'all',
+            description: ''
+          };
+          
+          document.querySelectorAll('.btn-secondary, .btn-success, .btn-danger').forEach(btn => {
+            btn.classList.remove('active');
+          });
+          const defaultAllBtn = document.querySelector('.btn-secondary');
+          if (defaultAllBtn) {
+            defaultAllBtn.classList.add('active');
           }
+
+          const descriptionFilter = document.getElementById('description-filter');
+          if (descriptionFilter) {
+            descriptionFilter.value = '';
+          }
+          
+          const categoryFilter = document.getElementById('category-filter');
+          if (categoryFilter) {
+            categoryFilter.value = 'all';
+          }
+          
+          refreshTables();
         });
       });
 

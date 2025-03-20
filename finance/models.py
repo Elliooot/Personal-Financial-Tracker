@@ -28,13 +28,13 @@ class Currency(models.Model):
     
     class Meta:
         constraints = [
-            # 確保系統貨幣唯一（user=None 的情況）
+            # Ensure that the system currency is unique (user=None)
             models.UniqueConstraint(
                 fields=['currency_code'],
                 condition=models.Q(user=None),
                 name='unique_system_currency'
             ),
-            # 確保每個用戶的貨幣唯一
+            # Ensure that each user's currency is unique
             models.UniqueConstraint(
                 fields=['user', 'currency_code'],
                 condition=~models.Q(user=None),

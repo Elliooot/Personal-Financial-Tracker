@@ -31,22 +31,28 @@ def create_default_categories(sender, instance, created, **kwargs):
             "Health",
             "Other Expenses"
         ]
+
+        existing_categories = Category.objects.filter(
+            user=instance
+        )
         
         # create income categories
         for category_name in default_income_categories:
-            Category.objects.get_or_create(
-                user=instance,
-                name=category_name,
-                is_income=True
-            )
+            if not existing_categories.filter(name=category_name, is_income=True).exists():
+                Category.objects.create(
+                    user=instance,
+                    name=category_name,
+                    is_income=True
+                )
         
         # create expense categories
         for category_name in default_expense_categories:
-            Category.objects.get_or_create(
-                user=instance,
-                name=category_name,
-                is_income=False
-            )
+            if not existing_categories.filter(name=category_name, is_income=False).exists():
+                Category.objects.create(
+                    user=instance,
+                    name=category_name,
+                    is_income=False
+                )
 
 @receiver(post_save, sender=User)
 def create_default_currencies(sender, instance, created, **kwargs):

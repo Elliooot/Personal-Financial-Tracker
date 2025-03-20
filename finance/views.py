@@ -51,7 +51,6 @@ def register(request):
             return redirect('detail')  # Go to home page
         except Exception as e:
             messages.error(request, f'Registration failed: {str(e)}')
-            # 或者記錄到日誌系統
             logger.error(f"User registration failed for {email}: {str(e)}")
             return redirect('register')
 
@@ -249,14 +248,15 @@ def update_transaction_view(request):
         if not transaction_id:
             return JsonResponse({'status': 'error', 'message': 'Transaction ID required'}, status=400)
 
+        description = request.POST.get('description', '').strip()
         transaction = Transaction.objects.get(id=transaction_id)
+        transaction.description = description if description else None
 
         # Get POST data
         date = request.POST.get('date')
         category_name = request.POST.get('category')
         transaction_type = request.POST.get('transaction_type') == 'true'
         amount = request.POST.get('amount')
-        description = request.POST.get('description')
         currency_code = request.POST.get('currency')
         account_name = request.POST.get('account')
 
@@ -285,7 +285,7 @@ def update_transaction_view(request):
         # Update other fields
         if date:
             transaction.date = date
-        transaction.transaction_type = transaction_type
+            transaction.transaction_type = transaction_type
         if amount:
             transaction.amount = amount
         if description:
@@ -293,7 +293,7 @@ def update_transaction_view(request):
 
         transaction.save()
 
-        return JsonResponse({'status': 'success', 'transaction_id': transaction.id})
+        return JsonResponse({'status': 'success', 'description': transaction.description or '' })
 
     except Transaction.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'Transaction not found'}, status=404)
@@ -478,7 +478,6 @@ def get_statistics_data(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 def management_view(request):
-    # 獲取所有類別對象並計算交易數量和金額總和
     categories = Category.objects.filter(user=request.user).annotate(
         transaction_count=Count('transaction'),
         total_amount=Sum('transaction__amount')
@@ -487,7 +486,6 @@ def management_view(request):
     income_categories = categories.filter(is_income=True)
     expense_categories = categories.filter(is_income=False)
     
-    # 處理 Decimal 序列化
     income_categories_list = []
     for cat in income_categories:
         cat_dict = {
